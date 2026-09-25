@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Work Breakdown — Task Tree</title>
+<link id="favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,75..125,300..800;1,75..125,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --plate:#EDEFF2;
+  --plate-2:#E1E5EA;
+  --card:#ffffff;
+  --hover:#F7F9FB;
+  --sel:#EEF2FF;
+  --track:#DFE4EA;
+  --grid:rgba(120,132,148,.10);
+  --wash:rgba(255,255,255,.5);
+  --panel:rgba(255,255,255,.82);
+  --panel-2:rgba(255,255,255,.6);
+  --panel-3:rgba(255,255,255,.9);
+  --ink:#12161C;
+  --onink:#ffffff;
+  --ink-soft:#5B6472;
+  --rule:#C3CAD3;
+  --nominal:#0F6E5C;
+  --caution:#B4630A;
+  --fault:#B02A2A;
+  --wait:#C9A227;
+  --hold:#8A93A0;
+  --focus:#1B4DDB;
+  --radius:3px;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --plate:#0D1117;
+  --plate-2:#1B212B;
+  --card:#161C25;
+  --hover:#1A212B;
+  --sel:#17243F;
+  --track:#252D39;
+  --grid:rgba(150,168,196,.07);
+  --wash:rgba(8,11,16,.45);
+  --panel:rgba(22,28,37,.86);
+  --panel-2:rgba(22,28,37,.6);
+  --panel-3:rgba(19,24,32,.9);
+  --ink:#DDE3EC;
+  --onink:#0D1117;
+  --ink-soft:#8B95A6;
+  --rule:#2E3745;
+  --nominal:#3FB795;
+  --caution:#E0964A;
+  --fault:#EE6B6B;
+  --wait:#E8C74E;
+  --hold:#6B7686;
+  --focus:#6E9BFF;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{
+  transition:background-color .25s ease,color .25s ease;margin:0;height:100%}
+body{
+  background:
+    linear-gradient(0deg,var(--wash),var(--wash)),
+    repeating-linear-gradient(90deg,transparent 0 47px,var(--grid) 47px 48px),
+    repeating-linear-gradient(0deg,transparent 0 47px,var(--grid) 47px 48px),
+    var(--plate);
+  color:var(--ink);
+  font-family:"Inter Tight",system-ui,sans-serif;
+  font-size:15px;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+/* ---------- shell ---------- */
+.wrap{
+  width:100%;
+  max-width:var(--maxw,1180px);
+  margin:0 auto;
+  padding:28px clamp(18px,3vw,56px) 120px;
+  transition:max-width .2s ease;
+}
+/* Wide screens: let the sheet use the room, with a readable ceiling */
+@media (min-width:1300px){ :root{--maxw:1560px} }
+@media (min-width:1800px){ :root{--maxw:1780px} }
+html[data-width="full"] .wrap{--maxw:none}
+
+header.plate{
+  border:1px solid var(--rule);
+  background:var(--panel);
+  backdrop-filter:blur(4px);
+  border-radius:var(--radius);
+  display:grid;grid-template-columns:1fr auto;gap:18px;
+  padding:16px 18px;
+}
+.eyebrow{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.filechip{
+  display:flex;align-items:center;gap:7px;margin-top:8px;
+  font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-soft);
+}
+.filechip .dirty{width:6px;height:6px;border-radius:50%;background:var(--caution);flex:0 0 auto}
+.filechip #fileLbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60ch}
+#planName{
+  display:block;width:100%;border:none;background:none;padding:2px 0 0;
+  font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 112;
+  font-weight:700;font-size:clamp(26px,4.2vw,40px);line-height:1.02;
+  letter-spacing:-.02em;text-transform:uppercase;
+}
+#planName::placeholder{color:var(--rule)}
+
+/* rollup gauge — the signature */
+.gauge{min-width:250px;max-width:420px;width:26vw;display:flex;flex-direction:column;justify-content:flex-end;gap:7px}
+.bars{display:flex;height:26px;border:1px solid var(--ink);border-radius:2px;overflow:hidden;background:var(--card)}
+.bars i{display:block;transition:width .35s cubic-bezier(.2,.7,.2,1)}
+.bars i.done{background:var(--nominal)}
+.bars i.wip{background:var(--caution)}
+.bars i.wait{background:var(--wait)}
+.bars i.blocked{background:var(--fault)}
+.bars i.todo{background:repeating-linear-gradient(135deg,var(--card) 0 5px,var(--track) 5px 10px)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.06em}
+.legend span{display:flex;align-items:center;gap:5px;color:var(--ink-soft)}
+.legend b{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* ---------- collapsible table headers ---------- */
+.col-toggle{display:flex;align-items:center;gap:5px;border:0;background:none;padding:0;font:inherit;letter-spacing:.03em;text-transform:none;cursor:pointer;width:100%;text-align:left;color:var(--ink-soft)}
+.col-toggle:hover,.col-toggle:focus-visible{color:var(--ink)}
+.col-toggle .col-arrow{font-size:12px;line-height:1}
+html[data-col-owner="off"] .owner,html[data-col-owner="off"] .colhead .c2{width:48px;flex:0 0 48px;min-width:48px;max-width:48px}
+html[data-col-owner="off"] .owner>*{display:none}
+html[data-col-owner="off"] .owner{border-left:1px solid var(--rule);align-self:stretch}
+html[data-col-status="off"] .status,html[data-col-status="off"] .colhead .c3{width:48px;flex:0 0 48px;min-width:48px;max-width:48px}
+html[data-col-status="off"] .status>*{display:none}
+html[data-col-status="off"] .status{border-left:1px solid var(--rule);align-self:stretch}
+html[data-col-rollup="off"] .rollup,html[data-col-rollup="off"] .colhead .c4{width:48px;flex:0 0 48px;min-width:48px;max-width:48px}
+html[data-col-rollup="off"] .rollup>*{display:none}
+html[data-col-rollup="off"] .rollup{border-left:1px solid var(--rule);align-self:stretch}
+html[data-col-notes="off"] .notepv,html[data-col-notes="off"] .colhead .c5{width:48px;flex:0 0 48px;min-width:48px;max-width:48px}
+html[data-col-notes="off"] .notepv>*{display:none}
+html[data-col-notes="off"] .notepv{border-left:1px solid var(--rule);align-self:stretch}
+
+/* ---------- history controls ---------- */
+.hist{display:flex;align-items:center;gap:6px;padding-right:4px;border-right:1px solid var(--rule);margin-right:2px}
+.hist .btn:disabled{opacity:.38;cursor:not-allowed}
+.hist .btn:disabled:hover{border-color:var(--rule)}
+.histct{
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;color:var(--ink-soft);
+  min-width:9ch;
+}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);
+  display:flex;align-items:center;gap:12px;
+  background:var(--ink);color:var(--onink);border-radius:3px;
+  padding:11px 14px;font-size:13.5px;box-shadow:0 8px 30px rgba(0,0,0,.28);
+  opacity:0;transition:opacity .2s ease,transform .2s ease;z-index:50;max-width:min(92vw,560px);
+}
+#toast.in{opacity:1;transform:translate(-50%,0)}
+#toast button{
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid var(--onink);color:var(--onink);padding:5px 9px;border-radius:2px;flex:0 0 auto;
+}
+#toast button:hover{background:var(--onink);color:var(--ink)}
+
+/* ---------- view switcher ---------- */
+.viewbar{display:flex;gap:0;margin-top:16px;border-bottom:1px solid var(--rule)}
+.viewbar button{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  padding:9px 16px;color:var(--ink-soft);border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.viewbar button:hover{color:var(--ink)}
+.viewbar button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:700}
+
+/* ---------- board ---------- */
+.board{
+  display:flex;gap:14px;margin-top:14px;align-items:flex-start;
+}
+.lane{flex:1 1 0;min-width:0}
+.lane.shut{flex:0 0 46px;min-height:0}
+.lane{
+  border:1px solid var(--rule);border-top:3px solid var(--lanec,var(--rule));
+  border-radius:var(--radius);background:var(--panel-3);min-height:220px;display:flex;flex-direction:column;
+}
+.lane.over{border-color:var(--lanec);box-shadow:0 0 0 2px var(--lanec) inset}
+.lane-hd{
+  display:flex;align-items:baseline;gap:8px;padding:10px 12px;border-bottom:1px solid var(--plate-2);
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  width:100%;text-align:left;
+}
+.lane-hd:hover{background:var(--hover)}
+.lane-hd .tw{color:var(--ink-soft);flex:0 0 auto}
+.lane.shut{min-height:200px}
+.lane.shut .lane-hd{
+  flex-direction:column;align-items:center;gap:12px;height:100%;
+  border-bottom:none;padding:10px 6px 14px;
+}
+.lane.shut .lane-hd .nm{writing-mode:vertical-rl;letter-spacing:.22em}
+.lane.shut .lane-hd .ct{
+  margin-left:0;margin-top:auto;background:var(--lanec);color:var(--card);
+  border-radius:99px;min-width:20px;padding:2px 5px;text-align:center;
+}
+.lane-hd .nm{color:var(--lanec);font-weight:700}
+.lane-hd .ct{margin-left:auto;color:var(--ink-soft)}
+.lane-body{padding:10px;display:flex;flex-direction:column;gap:9px;flex:1}
+.card{
+  border:1px solid var(--rule);border-left:3px solid var(--lanec);border-radius:2px;
+  background:var(--card);padding:9px 10px;cursor:grab;
+  transition:border-color .15s,transform .08s,box-shadow .15s;
+}
+.card:hover{border-color:var(--ink);border-left-color:var(--lanec)}
+.card.drag{opacity:.4;cursor:grabbing}
+.card .crumb{
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.08em;color:var(--ink-soft);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;
+}
+.card .ttl{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 106;font-weight:600;font-size:14px;line-height:1.28}
+.card.done .ttl{text-decoration:line-through;text-decoration-color:var(--nominal);color:var(--ink-soft)}
+.card .nt{
+  font-size:12px;color:var(--ink-soft);margin-top:5px;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.card .cwait{
+  font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.06em;margin-top:6px;
+  color:var(--ink);border:1px solid var(--wait);border-radius:2px;padding:2px 5px;display:inline-block;
+  background:color-mix(in srgb,var(--wait) 14%,transparent);
+}
+.card .cwait.soon{font-weight:700}
+.card .cwait.over{border-color:var(--fault);color:var(--fault);background:transparent}
+.card .foot{display:flex;align-items:center;gap:6px;margin-top:8px}
+.card .who{
+  font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--ink-soft);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;
+}
+.card .moves{display:flex;gap:3px;opacity:0;transition:opacity .12s}
+.card:hover .moves,.card:focus-within .moves{opacity:1}
+.card .moves button{
+  width:20px;height:20px;border:1px solid var(--rule);border-radius:2px;background:var(--plate);
+  font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--ink-soft);line-height:1;
+}
+.card .moves button:hover{border-color:var(--ink);color:var(--ink)}
+.lane-empty{
+  border:1px dashed var(--rule);border-radius:2px;padding:16px 10px;text-align:center;
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--rule);
+}
+@media (max-width:1100px){.board{flex-wrap:wrap}.lane{flex:1 1 260px}}
+@media (max-width:640px){.lane{flex:1 1 100%}.lane.shut{flex:1 1 100%;min-height:0}.lane.shut .lane-hd{flex-direction:row;height:auto}.lane.shut .lane-hd .nm{writing-mode:horizontal-tb}.lane.shut .lane-hd .ct{margin-left:auto;margin-top:0}}
+
+/* ---------- toolbar ---------- */
+.toolbar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin:14px 0 6px;padding:9px 10px;
+  border:1px solid var(--rule);border-radius:var(--radius);
+  background:var(--panel-2);
+}
+.btn{
+  font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px solid var(--rule);background:var(--card);padding:7px 11px;border-radius:2px;
+  transition:border-color .15s,background .15s,transform .08s;
+}
+.btn:hover{border-color:var(--ink);background:var(--card)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--ink);color:var(--onink);border-color:var(--ink)}
+.spacer{flex:1}
+#search{
+  border:1px solid var(--rule);background:var(--card);border-radius:2px;padding:7px 10px;width:190px;
+}
+.filters{display:flex;border:1px solid var(--rule);border-radius:2px;overflow:hidden;background:var(--card)}
+.filters button{
+  font-family:"JetBrains Mono",monospace;font-size:11px;padding:7px 9px;letter-spacing:.06em;
+  border-right:1px solid var(--rule);color:var(--ink-soft);
+}
+.filters button:last-child{border-right:none}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--onink)}
+
+/* ---------- tree ---------- */
+.sheet{
+  margin-top:10px;border:1px solid var(--ink);border-radius:var(--radius);
+  background:var(--panel-3);overflow:hidden;
+}
+.colhead{
+  display:flex;gap:10px;padding:8px 14px;border-bottom:1px solid var(--ink);
+  font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);
+}
+.colhead .c1{flex:1}
+.colhead .c2{width:78px}
+.colhead .c3{width:150px}
+.colhead .c4{width:88px}
+.colhead .c5{width:clamp(180px,20vw,340px)}
+
+.row{
+  display:flex;align-items:center;gap:10px;padding:0 14px;min-height:38px;
+  border-bottom:1px solid var(--plate-2);position:relative;
+}
+.row:hover{background:var(--hover)}
+.row.sel{background:var(--sel);box-shadow:inset 3px 0 0 var(--focus)}
+.row.dim{opacity:.32}
+.main{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.indent{display:flex;align-self:stretch;flex:0 0 auto}
+.indent span{width:18px;position:relative}
+.indent span.line::before{
+  content:"";position:absolute;left:8px;top:0;bottom:0;border-left:1px dotted var(--rule);
+}
+.twist{
+  width:16px;height:16px;flex:0 0 16px;font-family:"JetBrains Mono",monospace;font-size:10px;
+  color:var(--ink-soft);display:grid;place-items:center;border:1px solid transparent;
+}
+.twist.has:hover{border-color:var(--rule);background:var(--card)}
+.wbs{
+  font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--ink-soft);
+  flex:0 0 auto;letter-spacing:.02em;
+}
+.title{
+  flex:1;min-width:0;border:none;background:none;padding:8px 4px;border-radius:2px;
+}
+.title:focus{background:var(--card);box-shadow:inset 0 0 0 1px var(--focus)}
+.d0 .title{font-family:"Archivo",sans-serif;font-variation-settings:"wdth" 108;font-weight:650;font-size:15.5px}
+.row.done .title{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--nominal)}
+
+/* status control */
+.status{width:150px;flex:0 0 150px;display:flex;gap:3px}
+.status button{
+  flex:1;height:22px;min-width:0;padding:0 1px;border:1px solid var(--rule);background:var(--card);border-radius:2px;
+  font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.02em;color:var(--ink-soft);
+}
+.status button:hover{border-color:var(--ink)}
+.status button[aria-pressed="true"]{color:var(--onink);border-color:transparent}
+.status button.s-wip[aria-pressed="true"]{background:var(--caution)}
+.status button.s-wt[aria-pressed="true"]{background:var(--wait);color:#2A2205}
+.status button.s-blk[aria-pressed="true"]{background:var(--fault)}
+.status button.s-dn[aria-pressed="true"]{background:var(--nominal)}
+
+.owner{width:78px;flex:0 0 78px}
+.owner input{width:100%;border:none;background:none;padding:6px 4px;font-family:"JetBrains Mono",monospace;font-size:11px;border-radius:2px}
+.owner input:focus{background:var(--card);box-shadow:inset 0 0 0 1px var(--focus)}
+.rollup{
+  width:88px;flex:0 0 88px;display:flex;align-items:center;gap:7px;
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink-soft);
+}
+.mini{flex:1;height:5px;background:var(--track);border-radius:99px;overflow:hidden}
+.mini i{display:block;height:100%;background:var(--nominal);transition:width .3s}
+.notepv{
+  width:clamp(180px,20vw,340px);flex:0 0 clamp(180px,20vw,340px);
+  display:flex;align-items:center;gap:7px;min-width:0;
+  border-left:1px solid var(--plate-2);padding-left:10px;align-self:stretch;
+}
+.notepv button{
+  flex:1;min-width:0;text-align:left;padding:5px 6px;border-radius:2px;
+  border:1px solid transparent;font-size:12.5px;line-height:1.35;color:var(--ink-soft);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.notepv button:hover{border-color:var(--rule);background:var(--card);color:var(--ink)}
+.notepv button.blank{color:var(--rule);font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase}
+.notepv .pin{
+  flex:0 0 auto;width:5px;height:5px;border-radius:50%;background:var(--focus);
+}
+.movegrp{display:flex;gap:2px;padding-right:5px;margin-right:3px;border-right:1px solid var(--plate-2)}
+.rowbtns button:disabled{opacity:.28;cursor:not-allowed}
+.rowbtns button:disabled:hover{border-color:var(--rule);color:var(--ink-soft)}
+.row.dragging{opacity:.45}
+.row[draggable="true"]{cursor:default}
+.row.drop-above{box-shadow:inset 0 2px 0 var(--focus)}
+.row.drop-below{box-shadow:inset 0 -2px 0 var(--focus)}
+.row.drop-child{box-shadow:inset 0 0 0 1px var(--focus);background:var(--sel)}
+.row.drop-child .wbs::after{
+  content:" ⤷";color:var(--focus);font-weight:700;
+}
+.rowbtns{display:flex;gap:2px;opacity:0;transition:opacity .12s}
+.row:hover .rowbtns,.row.sel .rowbtns{opacity:1}
+.rowbtns button{
+  width:22px;height:22px;border:1px solid var(--rule);border-radius:2px;background:var(--card);
+  font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1;color:var(--ink-soft);
+}
+.rowbtns button:hover{border-color:var(--ink);color:var(--ink)}
+.waitchip{
+  display:flex;align-items:center;gap:6px;flex:0 0 auto;
+  border:1px solid var(--wait);border-radius:2px;padding:1px 4px 1px 6px;
+  background:color-mix(in srgb,var(--wait) 12%,transparent);
+}
+.waitchip .wlbl{
+  font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink);white-space:nowrap;
+}
+.waitchip.soon{border-width:1.5px}
+.waitchip.soon .wlbl{font-weight:700}
+.waitchip .wdate{
+  border:none;background:none;font-family:"JetBrains Mono",monospace;font-size:10.5px;
+  color:var(--ink-soft);padding:0;width:9.5em;
+}
+.waitchip .wdate:focus{color:var(--ink)}
+.row.wait .title{color:var(--ink)}
+.badge-blk{
+  font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.1em;
+  color:var(--fault);border:1px solid var(--fault);padding:1px 4px;border-radius:2px;
+}
+
+.empty{padding:44px 20px;text-align:center;color:var(--ink-soft)}
+.empty h3{font-family:"Archivo",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;margin:0 0 6px;color:var(--ink)}
+
+/* ---------- docked notes panel ---------- */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  border-top:1px solid var(--ink);background:var(--panel);backdrop-filter:blur(8px);
+  box-shadow:0 -6px 24px rgba(0,0,0,.10);
+  display:flex;flex-direction:column;gap:7px;padding:9px clamp(18px,3vw,44px) 11px;
+  transition:transform .22s ease;
+}
+.dock-hd{display:flex;align-items:center;gap:10px}
+.dock-hd .eyebrow{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dockToggle{
+  width:24px;height:24px;border:1px solid var(--rule);border-radius:2px;background:var(--card);
+  font-size:11px;line-height:1;color:var(--ink-soft);flex:0 0 auto;
+}
+#dockToggle:hover{border-color:var(--ink);color:var(--ink)}
+.dock textarea{
+  width:100%;height:92px;border:1px solid var(--rule);border-radius:2px;
+  padding:9px 10px;background:var(--card);resize:vertical;min-height:52px;max-height:40vh;
+}
+.dock[data-open="false"] textarea{display:none}
+.dock[data-open="false"]{padding-bottom:9px}
+/* keep the last rows reachable above the dock */
+.wrap{padding-bottom:210px}
+html[data-dock="closed"] .wrap{padding-bottom:86px}
+
+footer{
+  margin-top:18px;display:flex;flex-wrap:wrap;gap:10px 22px;
+  font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--ink-soft);letter-spacing:.04em;
+}
+kbd{
+  font-family:"JetBrains Mono",monospace;font-size:10px;border:1px solid var(--rule);
+  background:var(--card);border-radius:2px;padding:1px 4px;color:var(--ink);
+}
+@media (min-width:1300px){
+  .colhead .c2,.owner{width:104px;flex-basis:104px}
+  .colhead .c3,.status{width:170px;flex-basis:170px}
+  .colhead .c4,.rollup{width:120px;flex-basis:120px}
+  .d0 .title{font-size:16.5px}
+}
+@media (max-width:820px){
+  .sheet{overflow-x:auto}
+  .colhead,.row{min-width:720px}
+  header.plate{grid-template-columns:1fr}
+  .gauge{width:auto;max-width:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+#themeBtn{display:flex;align-items:center;gap:7px}
+#themeBtn .dot{
+  width:11px;height:11px;border-radius:50%;border:1px solid var(--ink);
+  background:linear-gradient(90deg,var(--ink) 0 50%,transparent 50% 100%);
+}
+/* Roadmap: independent task graph, persisted in model.roadmap. */
+.rm-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 0}
+.rm-tools .rm-count{color:var(--ink-soft);font-size:12px;margin-right:auto}
+#rmPending[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--onink)}
+.rm-help{font-size:12px;color:var(--ink-soft);margin:0 0 12px;line-height:1.6}
+.rm-viewport{height:70vh;min-height:430px;overflow:auto;position:relative;border:1px solid var(--rule);border-radius:8px;background:var(--plate);overscroll-behavior:contain;isolation:isolate}
+.rm-ruler{height:36px;position:sticky;top:0;z-index:6;background:var(--card);border-bottom:1px solid var(--rule);font:11px "JetBrains Mono",monospace;overflow:hidden}
+.rm-ruler span{position:absolute;top:10px;white-space:nowrap;color:var(--ink-soft)}
+.rm-ruler .rm-now{color:var(--focus);font-weight:700}
+.rm-surface{position:relative}
+.rm-canvas{position:absolute;left:0;top:0;transform-origin:0 0;background-image:radial-gradient(var(--rule) .7px,transparent .7px);background-size:18px 18px}
+.rm-grid{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.rm-line{position:absolute;top:0;bottom:0;border-left:1px solid var(--grid)}
+.rm-line.major{border-color:var(--rule);opacity:.65}
+.rm-line.now{border-color:var(--focus);border-left-style:dashed;opacity:.65}
+.rm-links{position:absolute;inset:0;overflow:visible;pointer-events:none}
+.rm-wire{fill:none;stroke:var(--ink-soft);stroke-width:2;opacity:.65}
+.rm-wire.active{stroke:var(--focus);stroke-width:3;opacity:1}
+.rm-wire.ghost{stroke:var(--focus);stroke-dasharray:6 5;opacity:1}
+.rm-hit{fill:none;stroke:transparent;stroke-width:18;pointer-events:stroke;cursor:pointer}
+.rm-node{position:absolute;width:260px;border:1px solid var(--rule);border-left:3px solid var(--node-color);border-radius:3px;background:var(--card);box-shadow:0 4px 15px #0000000d;color:var(--node-color);touch-action:none}
+.rm-node.selected{outline:2px solid var(--focus);outline-offset:3px}
+.rm-node.link-target{outline:2px dashed var(--focus);outline-offset:5px}
+.rm-node header{display:flex;gap:5px;align-items:center;padding:0;margin-bottom:4px}
+.rm-node header .crumb{flex:1;min-width:0;margin:0;color:var(--node-color);opacity:.8}
+.rm-grip{border:0;background:none;cursor:grab;color:var(--node-color);padding:0 2px;font-size:15px;line-height:18px;touch-action:none}
+.rm-grip:active{cursor:grabbing}
+.rm-node input[type=checkbox]{accent-color:var(--node-color);cursor:pointer;flex-shrink:0}
+.rm-node .rm-title{min-width:0;width:100%;color:var(--node-color);overflow-wrap:anywhere;cursor:text;outline-offset:2px}
+.rm-node-body{padding:0}
+.rm-meta{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);margin:2px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rm-node .rm-moves{opacity:1;display:flex;gap:3px}
+.rm-node .rm-moves button{padding:0;cursor:pointer;color:var(--node-color)}
+.rm-node .rm-moves button:hover,.rm-node .rm-moves button:focus-visible{color:var(--action-color);border-color:var(--action-color)}
+.rm-date{font:10px "JetBrains Mono",monospace;background:var(--hover);border:1px solid var(--rule);border-radius:4px;padding:5px 6px;display:flex;align-items:center;gap:5px;margin-top:8px;color:var(--node-color)}
+.rm-date input{min-width:0;width:118px;background:transparent;border:0;font:inherit}
+.rm-preview{font-size:12px;color:var(--ink-soft);line-height:1.5;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:7px 0}
+.rm-progress{height:4px;border-radius:4px;background:var(--track);overflow:hidden;margin:8px 0}
+.rm-progress i{display:block;height:100%;background:var(--node-color)}
+.rm-checklist{display:grid;gap:6px;margin:10px 0 2px;max-height:300px;overflow:auto;touch-action:pan-y}
+.rm-check{display:grid;grid-template-columns:16px 1fr;gap:5px;align-items:start;border-top:1px solid var(--rule);padding-top:7px}
+.rm-check-label{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.rm-check-label.done{text-decoration:line-through;color:var(--ink-soft)}
+.rm-check-controls{grid-column:2;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.rm-check-controls input[type=date]{font-size:10px;max-width:120px;background:var(--card);border:1px solid var(--rule);border-radius:3px}
+.rm-port{position:absolute;width:25px;height:25px;border:1px dashed var(--node-color);border-radius:50%;background:var(--card);color:var(--node-color);display:grid;place-items:center;padding:0;font-size:14px;opacity:.28;z-index:2;cursor:crosshair;touch-action:none}
+.rm-node:hover .rm-port,.rm-node:focus-within .rm-port,.rm-node.selected .rm-port,.rm-linking .rm-port{opacity:1}
+.rm-port[data-side=right]{right:-14px;top:calc(50% - 12px)}
+.rm-port[data-side=left]{left:-14px;top:calc(50% - 12px)}
+.rm-empty{padding:50px;color:var(--ink-soft)}
+.rm-viewport:focus-visible{outline:2px solid var(--focus)}
+html.rm-fullscreen,html.rm-fullscreen body{overflow:hidden}
+html.rm-fullscreen #viewRoadmap{position:fixed;inset:0;z-index:50;padding:12px 18px;background:var(--plate);display:flex;flex-direction:column}
+html.rm-fullscreen .rm-tools{flex:0 0 auto;padding:0 0 8px}
+html.rm-fullscreen .rm-help{flex:0 0 auto;margin-bottom:8px}
+html.rm-fullscreen .rm-viewport{height:auto;min-height:0;flex:1}
+html.rm-fullscreen #syncNotice{position:fixed;z-index:60;bottom:16px;left:24px;right:24px;background:var(--card);box-shadow:0 4px 15px #0003}
+@media(max-width:700px){.rm-viewport{height:65vh}.rm-tools .rm-count{flex-basis:100%}.rm-help{font-size:11px}}
+
+/* External-change review */
+#changesDialog{color:var(--ink);background:var(--card);border:1px solid var(--rule);border-radius:8px;width:min(900px,94vw);max-height:88vh;padding:0;box-shadow:0 20px 80px #0005}
+#changesDialog::backdrop{background:#0007}
+.sync-dialog-head,.sync-dialog-foot{padding:16px 22px;background:var(--plate)}
+.sync-dialog-head h2{font-size:20px;margin:0 0 8px}.sync-dialog-head p,.sync-dialog-foot p{font-size:13px;line-height:1.5;margin:0;color:var(--ink-soft)}
+.sync-dialog-body{padding:8px 22px 16px;max-height:52vh;overflow:auto}.sync-dialog-body h3{font-size:14px;margin:16px 0 10px}
+.sync-dialog-body details{border:1px solid var(--rule);border-radius:4px;margin:8px 0;padding:10px}.sync-dialog-body summary{cursor:pointer;font-size:13px;overflow-wrap:anywhere}
+.sync-value{margin:10px 0;min-width:0}.sync-value strong{font-size:11px;color:var(--ink-soft)}
+.sync-value pre{font:12px "JetBrains Mono",monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:190px;overflow:auto;background:var(--plate);border-radius:3px;padding:8px;margin:4px 0}
+.sync-conflict{border-left:3px solid var(--caution);padding:10px 12px;margin:12px 0;background:var(--hover)}.sync-conflict label{font-size:13px;font-weight:600;display:block}.sync-conflict select{display:block;margin:8px 0;padding:7px;max-width:100%;background:var(--card);border:1px solid var(--rule);border-radius:3px}
+.sync-dialog-foot>div{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;flex-wrap:wrap}#changesError{font-size:13px;color:var(--fault)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="plate">
+    <div>
+      <div class="eyebrow">Work breakdown · <span id="stamp"></span></div>
+      <div class="filechip" id="fileChip"><span class="dirty" id="dirtyDot" hidden></span><span id="fileLbl">Not saved to a file yet</span></div>
+      <input id="planName" placeholder="Untitled plan" value="Untitled plan" aria-label="Plan name" />
+    </div>
+    <div class="gauge">
+      <div class="eyebrow" id="countLine">0 tasks</div>
+      <div class="bars" id="bars" role="img" aria-label="Status rollup">
+        <i class="done" style="width:0%"></i><i class="wip" style="width:0%"></i><i class="wait" style="width:0%"></i><i class="blocked" style="width:0%"></i><i class="todo" style="width:100%"></i>
+      </div>
+      <div class="legend">
+        <span><b style="background:var(--nominal)"></b>Done <em id="nDone">0</em></span>
+        <span><b style="background:var(--caution)"></b>In progress <em id="nWip">0</em></span>
+        <span><b style="background:var(--wait)"></b>Waiting <em id="nWait">0</em></span>
+        <span><b style="background:var(--fault)"></b>Blocked <em id="nBlk">0</em></span>
+        <span><b style="background:#C8CFD8"></b>Open <em id="nTodo">0</em></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="viewbar" role="tablist" aria-label="View mode">
+    <button id="tabTree" role="tab" aria-selected="true">Tree</button>
+    <button id="tabBoard" role="tab" aria-selected="false">Board</button>
+    <button id="tabRoadmap" role="tab" aria-selected="false">Roadmap</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn primary" id="addRoot">+ Task</button>
+    <div class="hist">
+      <button class="btn" id="undoBtn" disabled>↶ Undo</button>
+      <button class="btn" id="redoBtn" disabled>↷ Redo</button>
+      <span class="histct" id="histCount">no history</span>
+    </div>
+    <button class="btn" id="expandAll">Expand</button>
+    <button class="btn" id="collapseAll">Collapse</button>
+    <div class="filters" id="filters" role="group" aria-label="Filter by status">
+      <button data-f="all" aria-pressed="true">ALL</button>
+      <button data-f="pending" aria-pressed="false" title="Everything not finished">PENDING</button>
+      <button data-f="wip" aria-pressed="false">WIP</button>
+      <button data-f="wait" aria-pressed="false">WAITING</button>
+      <button data-f="blocked" aria-pressed="false">BLOCKED</button>
+      <button data-f="open" aria-pressed="false">OPEN</button>
+    </div>
+    <input id="search" type="search" placeholder="Filter text…" aria-label="Search tasks" />
+    <div class="spacer"></div>
+    <button class="btn primary" id="saveBtn">Save</button>
+    <button class="btn" id="saveAsBtn">Save as…</button>
+    <button class="btn" id="loadBtn">Open…</button>
+    <button class="btn" id="mdBtn">Export .md</button>
+    <button class="btn" id="widthBtn" aria-pressed="false" title="Toggle full-width layout"><span id="widthLbl">Full width</span></button>
+    <button class="btn" id="themeBtn" aria-pressed="false" title="Toggle dark mode"><span class="dot"></span><span id="themeLbl">Dark</span></button>
+    <input id="fileInput" type="file" accept=".json,application/json" hidden />
+  </div>
+
+  <div id="syncNotice" role="status" hidden style="padding:12px;border:1px solid var(--fault);margin-bottom:12px">
+    <span id="syncMessage"></span>
+    <button class="btn" id="syncCopy">Download my copy</button>
+    <button class="btn" id="syncReview" hidden>Review changes…</button>
+    <button class="btn" id="syncRetry">Check file again</button>
+  </div>
+  <dialog id="changesDialog" aria-labelledby="changesTitle">
+    <div class="sync-dialog-head"><h2 id="changesTitle">External changes detected</h2><p id="changesSummary"></p></div>
+    <div class="sync-dialog-body"><h3>Changes on disk</h3><div id="changesList"></div><div id="changesConflicts"></div><p id="changesError" role="alert"></p></div>
+    <div class="sync-dialog-foot"><p>Merge updates the browser copy. Reject keeps the browser version. Neither writes to disk; use Save afterward to write your chosen version.</p><div><button class="btn" id="changesLater">Review later</button><button class="btn" id="changesReject">Reject changes</button><button class="btn primary" id="changesMerge">Merge changes</button></div></div>
+  </dialog>
+  <div id="viewTree">
+  <div class="sheet">
+    <div class="colhead">
+      <div class="c1">Task</div><div class="c2"><button class="col-toggle" id="col-owner" aria-expanded="true"><span class="col-arrow" id="col-arrow-owner">▾</span><span id="col-label-owner">Owner</span></button></div><div class="c3"><button class="col-toggle" id="col-status" aria-expanded="true"><span class="col-arrow" id="col-arrow-status">▾</span><span id="col-label-status">Status</span></button></div><div class="c4"><button class="col-toggle" id="col-rollup" aria-expanded="true"><span class="col-arrow" id="col-arrow-rollup">▾</span><span id="col-label-rollup">Progress</span></button></div><div class="c5"><button class="col-toggle" id="col-notes" aria-expanded="true"><span class="col-arrow" id="col-arrow-notes">▾</span><span id="col-label-notes">Notes</span></button></div>
+    </div>
+    <div id="tree"></div>
+  </div>
+
+
+  </div>
+
+  <div id="viewBoard" hidden>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div id="viewRoadmap" hidden>
+    <div class="rm-tools">
+      <button class="btn primary" id="rmAdd">+ Task</button>
+      <button class="btn" id="rmGroup" disabled>Group as gate</button>
+      <button class="btn" id="rmUngroup" disabled title="Reveal the next level; keep deeper tasks grouped">Ungroup</button>
+      <button class="btn" id="rmPending" aria-pressed="false" title="Hide completed chain endings and completed checklist items">PENDING</button>
+      <button class="btn" id="rmRemoveLink" disabled>Remove link</button>
+      <span class="rm-count" id="rmCount"></span>
+      <button class="btn" id="rmToday">Today</button>
+      <button class="btn" id="rmZoomOut" aria-label="Zoom out">−</button>
+      <span id="rmZoomLabel">80%</span>
+      <button class="btn" id="rmZoomIn" aria-label="Zoom in">+</button>
+      <button class="btn" id="rmReset">Reset from tree</button>
+      <button class="btn" id="rmFullscreen" aria-pressed="false">⛶ Full screen</button>
+    </div>
+    <p class="rm-help">Drag the background to pan · Drag ⠿ to move · Drag an edge arrow to connect milestones (or click two arrows) · Select boxes to create a checklist gate · Double-click a title to rename · Click a link to remove it · Waiting dates pin boxes to the calendar; gates use their latest wait date. Links do not change the task tree.</p>
+    <div class="rm-viewport" id="rmViewport" tabindex="0" aria-label="Roadmap calendar and milestones">
+      <div class="rm-ruler" id="rmRuler"></div>
+      <div class="rm-surface" id="rmSurface"><div class="rm-canvas" id="rmCanvas"></div></div>
+    </div>
+  </div>
+
+  <footer>
+    <span><kbd>Enter</kbd> new sibling</span>
+    <span><kbd>Tab</kbd> indent</span>
+    <span><kbd>Shift</kbd>+<kbd>Tab</kbd> outdent</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>Enter</kbd> new subtask</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>↑↓</kbd> move up/down</span>
+    <span>drag a row to reorder or nest</span>
+    <span><kbd>Backspace</kbd> on empty title deletes</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>Z</kbd> undo</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>Z</kbd> redo</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>S</kbd> save</span>
+    <span><kbd>⌘/Ctrl</kbd>+<kbd>⇧</kbd>+<kbd>S</kbd> save as</span>
+  </footer>
+</div>
+
+<aside class="dock" id="dock" data-open="true">
+  <div class="dock-hd">
+    <span class="eyebrow" id="noteLabel">Notes — select a task</span>
+    <button id="dockToggle" title="Collapse the notes panel" aria-expanded="true">▾</button>
+  </div>
+  <textarea id="note" placeholder="Select a task, then write notes, links or decisions here." disabled></textarea>
+</aside>
+
+<div id="toast" hidden aria-live="polite"></div>
+
+<script>
+const uid=()=>Math.random().toString(36).slice(2,10);
+const S={TODO:"todo",WIP:"wip",WAIT:"wait",BLOCKED:"blocked",DONE:"done"};
+
+let model={
+  version:1,
+  name:"Untitled plan",
+  updated:new Date().toISOString(),
+  tasks:[
+    {id:uid(),title:"Define mission objectives",status:S.DONE,owner:"",note:"",collapsed:false,children:[]},
+    {id:uid(),title:"Structures & thermal",status:S.TODO,owner:"",note:"",collapsed:false,children:[
+      {id:uid(),title:"Primary structure trade study",status:S.WIP,owner:"",note:"",collapsed:false,children:[]},
+      {id:uid(),title:"Thermal balance test plan",status:S.BLOCKED,owner:"",note:"Waiting on chamber slot.",collapsed:false,children:[]}
+    ]},
+    {id:uid(),title:"Avionics",status:S.TODO,owner:"",note:"",collapsed:false,children:[]}
+  ]
+};
+let selected=null, filter="all", query="", view="tree";
+
+/* ---------- tree helpers ---------- */
+function walk(list,fn,parent=null,depth=0,path=[]){
+  list.forEach((n,i)=>{const p=[...path,i+1];fn(n,parent,depth,p,list,i);walk(n.children,fn,n,depth+1,p);});
+}
+function find(id){let r=null;walk(model.tasks,(n,parent,d,p,list,i)=>{if(n.id===id)r={node:n,parent,list,index:i,path:p};});return r;}
+function leaves(n){return n.children.length?n.children.flatMap(leaves):[n];}
+function progress(n){const l=leaves(n);return l.filter(x=>x.status===S.DONE).length/l.length;}
+function newTask(t=""){return{id:uid(),title:t,status:S.TODO,owner:"",note:"",collapsed:false,children:[]};}
+
+/* ---------- render ---------- */
+const tree=document.getElementById("tree");
+let dragRow=null,dropTarget=null,dropMode=null;
+/* Selection is row-level: highlight, notes drawer and the dock all follow it. */
+function select(id){
+  if(selected===id)return;
+  selected=id;
+  tree.querySelectorAll(".row.sel").forEach(r=>r.classList.remove("sel"));
+  const r=tree.querySelector(`.row[data-id="${id}"]`);
+  if(r)r.classList.add("sel");
+  syncNote();
+}
+function clearDrop(){
+  tree.querySelectorAll(".drop-above,.drop-below,.drop-child").forEach(r=>r.classList.remove("drop-above","drop-below","drop-child"));
+  dropTarget=null;dropMode=null;
+}
+function matchesText(n){
+  const q=query.trim().toLowerCase();
+  return !q||n.title.toLowerCase().includes(q)||(n.owner||"").toLowerCase().includes(q)||(n.note||"").toLowerCase().includes(q);
+}
+function matches(n){
+  const q=query.trim().toLowerCase();
+  const textOk=!q||n.title.toLowerCase().includes(q)||(n.owner||"").toLowerCase().includes(q)||(n.note||"").toLowerCase().includes(q);
+  const st=filter==="all"
+    ||(filter==="pending"&&n.status!==S.DONE)
+    ||(filter==="open"&&n.status===S.TODO)
+    ||(filter==="wip"&&n.status===S.WIP)
+    ||(filter==="wait"&&n.status===S.WAIT)
+    ||(filter==="blocked"&&n.status===S.BLOCKED);
+  return textOk&&st;
+}
+function subtreeMatches(n){
+  if(filter==="pending"&&n.children.length&&leaves(n).every(l=>l.status===S.DONE)&&!matchesText(n))return false;
+  return matches(n)||n.children.some(subtreeMatches);
+}
+
+function render(){
+  if(view==="board")return renderBoard();
+  if(view==="roadmap")return renderRoadmap();
+  tree.innerHTML="";
+  const active=filter!=="all"||query.trim();
+  if(!model.tasks.length){
+    tree.innerHTML='<div class="empty"><h3>No tasks yet</h3><p>Add the first top-level item, then press Tab to nest work under it.</p></div>';
+  }
+  const build=(list,depth,path,ancestry)=>{
+    list.forEach((n,i)=>{
+      const p=[...path,i+1];
+      if(active&&!subtreeMatches(n))return;
+      tree.appendChild(rowEl(n,depth,p,ancestry));
+      const open=!n.collapsed||active;
+      if(n.children.length&&open)build(n.children,depth+1,p,[...ancestry,i<list.length-1]);
+    });
+  };
+  build(model.tasks,0,[],[]);
+  stats();
+  document.getElementById("stamp").textContent=new Date(model.updated).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
+}
+
+function rowEl(n,depth,path,ancestry){
+  const row=document.createElement("div");
+  row.className=`row d${depth} ${n.status}`+(selected===n.id?" sel":"")+((filter!=="all"||query.trim())&&!matches(n)?" dim":"");
+  row.dataset.id=n.id;
+
+  const main=document.createElement("div");main.className="main";
+  const ind=document.createElement("div");ind.className="indent";
+  for(let k=0;k<depth;k++){const s=document.createElement("span");s.className="line";ind.appendChild(s);}
+  main.appendChild(ind);
+
+  const tw=document.createElement("button");
+  tw.className="twist"+(n.children.length?" has":"");
+  tw.textContent=n.children.length?(n.collapsed?"▸":"▾"):"·";
+  tw.title=n.children.length?"Collapse / expand":"";
+  if(n.children.length)tw.onclick=()=>{n.collapsed=!n.collapsed;lastEdit=Date.now();dirty=true;paintFile();render();};
+  main.appendChild(tw);
+
+  const wbs=document.createElement("span");wbs.className="wbs";wbs.textContent=path.join(".");
+  main.appendChild(wbs);
+
+  const t=document.createElement("input");
+  t.className="title";t.value=n.title;t.placeholder="Describe the task";
+  t.oninput=e=>{n.title=e.target.value;markDirty("text","Rename task");stats();};
+  t.onfocus=()=>select(n.id);
+  t.onkeydown=e=>keys(e,n);
+  main.appendChild(t);
+
+  if(n.status===S.BLOCKED){
+    const b=document.createElement("span");b.className="badge-blk";
+    b.textContent=n.escalatedFrom?"BLOCKED · OVERDUE":"BLOCKED";
+    if(n.escalatedFrom)b.title=`Auto-blocked — wait date ${n.escalatedFrom} passed`;
+    main.appendChild(b);
+  }
+  if(n.status===S.WAIT){
+    const wrap=document.createElement("label");wrap.className="waitchip";
+    const dd=dueDays(n);
+    const lbl=document.createElement("span");lbl.className="wlbl";
+    lbl.textContent = dd===null?"until" : dd===0?"today" : dd===1?"1 day" : `${dd} days`;
+    if(dd!==null&&dd<=1)wrap.classList.add("soon");
+    const di=document.createElement("input");
+    di.type="date";di.value=n.waitUntil||"";di.className="wdate";
+    di.setAttribute("aria-label","Waiting until");
+    di.title="Becomes blocked the day after this date";
+    di.onchange=e=>{
+      n.waitUntil=e.target.value||undefined;delete n.escalatedFrom;
+      touch(null,"Set wait date");if(escalate())render();
+    };
+    wrap.append(lbl,di);main.appendChild(wrap);
+  }
+
+  const btns=document.createElement("div");btns.className="rowbtns";
+  const bChild=document.createElement("button");bChild.textContent="+";bChild.title="Add subtask";
+  bChild.onclick=()=>{const c=newTask();n.children.push(c);n.collapsed=false;selected=c.id;touch(c.id,"Add subtask");};
+  const bDel=document.createElement("button");bDel.textContent="×";bDel.title="Delete task and its subtasks";
+  bDel.onclick=()=>{
+    const f=find(n.id);const nm=n.title||"untitled task";
+    const kids=leaves(n).length-(n.children.length?0:1);
+    f.list.splice(f.index,1);selected=null;
+    touch(null,`Delete "${nm}"`);
+    flash(`Deleted "${nm}"`+(n.children.length?` and ${kids} subtask${kids>1?"s":""}`:""),{label:"Undo",fn:undo});
+  };
+  const mk=(glyph,title,ok,fn)=>{
+    const b=document.createElement("button");
+    b.textContent=glyph;b.title=title;b.setAttribute("aria-label",title);
+    b.disabled=!ok;b.onclick=fn;return b;
+  };
+  const grp=document.createElement("span");grp.className="movegrp";
+  grp.append(
+    mk("↑","Move up",canMoveUp(n.id),()=>moveVert(n.id,-1)),
+    mk("↓","Move down",canMoveDown(n.id),()=>moveVert(n.id,1)),
+    mk("→","Nest under the task above",canIndent(n.id),()=>indent(n.id)),
+    mk("←","Move out one level",canOutdent(n.id),()=>outdent(n.id))
+  );
+  btns.append(grp,bChild,bDel);main.appendChild(btns);
+  row.appendChild(main);
+
+  const ow=document.createElement("div");ow.className="owner";
+  const oi=document.createElement("input");oi.value=n.owner||"";oi.placeholder="owner";oi.setAttribute("aria-label","Owner");
+  oi.oninput=e=>{n.owner=e.target.value;markDirty("text","Change owner");};
+  ow.appendChild(oi);row.appendChild(ow);
+
+  const st=document.createElement("div");st.className="status";
+  [["WIP",S.WIP,"s-wip"],["WAIT",S.WAIT,"s-wt"],["BLK",S.BLOCKED,"s-blk"],["DONE",S.DONE,"s-dn"]].forEach(([lab,val,cls])=>{
+    const b=document.createElement("button");b.className=cls;b.textContent=lab;
+    b.setAttribute("aria-pressed",n.status===val);b.title=lab+" (click again to reopen)";
+    b.onclick=()=>{const nv=n.status===val?S.TODO:val;setStatus(n,nv);touch(null,"Set status "+lab);if(escalate())render();};
+    st.appendChild(b);
+  });
+  row.appendChild(st);
+
+  const ru=document.createElement("div");ru.className="rollup";
+  if(n.children.length){
+    const pct=Math.round(progress(n)*100);
+    ru.innerHTML=`<span class="mini"><i style="width:${pct}%"></i></span><span>${pct}%</span>`;
+  }else{ru.innerHTML='<span style="opacity:.4">—</span>';}
+  row.appendChild(ru);
+
+  /* Any interaction anywhere in the row takes selection, not just the title. */
+  row.addEventListener("pointerdown",()=>select(n.id),true);
+  row.addEventListener("focusin",()=>select(n.id));
+
+  row.draggable=true;
+  row.addEventListener("dragstart",e=>{
+    if(e.target.closest("input,textarea,button"))return e.preventDefault();
+    dragRow=n.id;row.classList.add("dragging");
+    e.dataTransfer.effectAllowed="move";e.dataTransfer.setData("text/plain",n.id);
+  });
+  row.addEventListener("dragend",()=>{dragRow=null;row.classList.remove("dragging");clearDrop();});
+  row.addEventListener("dragover",e=>{
+    if(!dragRow||dragRow===n.id)return;
+    e.preventDefault();clearDrop();
+    const r=row.getBoundingClientRect(),y=(e.clientY-r.top)/r.height;
+    dropMode = y<0.28 ? "above" : y>0.72 ? "below" : "child";
+    row.classList.add("drop-"+dropMode);dropTarget=n.id;
+  });
+  row.addEventListener("dragleave",()=>row.classList.remove("drop-above","drop-below","drop-child"));
+  row.addEventListener("drop",e=>{
+    e.preventDefault();
+    if(dragRow&&dropTarget)moveInto(dragRow,dropTarget,dropMode);
+    dragRow=null;clearDrop();
+  });
+
+  const np=document.createElement("div");np.className="notepv";
+  const nb=document.createElement("button");
+  const txt=(n.note||"").replace(/\s+/g," ").trim();
+  nb.textContent=txt||"add note";
+  nb.className=txt?"":"blank";
+  nb.title=txt||"Add a note to this task";
+  nb.setAttribute("aria-label",txt?`Note: ${txt}`:"Add a note");
+  nb.onclick=()=>{
+    select(n.id);setDock(true);
+    note.focus();note.setSelectionRange(note.value.length,note.value.length);
+  };
+  if(txt){const pin=document.createElement("span");pin.className="pin";np.appendChild(pin);}
+  np.appendChild(nb);
+  row.appendChild(np);
+  return row;
+}
+
+/* ---------- move operations ----------
+   Shared by the row buttons, the keyboard shortcuts and drag-and-drop so all
+   three routes behave identically and land in history as one step. */
+function canMoveUp(id){const f=find(id);return f&&f.index>0;}
+function canMoveDown(id){const f=find(id);return f&&f.index<f.list.length-1;}
+function canIndent(id){const f=find(id);return f&&f.index>0;}
+function canOutdent(id){const f=find(id);return f&&!!f.parent;}
+
+function moveVert(id,dir){
+  const f=find(id);if(!f)return;
+  const j=f.index+dir;if(j<0||j>=f.list.length)return;
+  f.list.splice(f.index,1);f.list.splice(j,0,f.node);
+  touch(id,dir<0?"Move up":"Move down");
+}
+function indent(id){
+  const f=find(id);if(!f||f.index===0)return;
+  const prev=f.list[f.index-1];
+  f.list.splice(f.index,1);prev.collapsed=false;prev.children.push(f.node);
+  touch(id,"Indent task");
+}
+function outdent(id){
+  const f=find(id);if(!f||!f.parent)return;
+  const g=find(f.parent.id);
+  f.list.splice(f.index,1);g.list.splice(g.index+1,0,f.node);
+  touch(id,"Outdent task");
+}
+/* Guard against dropping a task into its own subtree. */
+function isAncestor(aId,bId){
+  const a=find(aId);if(!a)return false;
+  let hit=false;walk(a.node.children,c=>{if(c.id===bId)hit=true;});
+  return hit;
+}
+function moveInto(dragId,targetId,mode){
+  if(dragId===targetId||isAncestor(dragId,targetId))return flash("Can't move a task inside itself");
+  const d=find(dragId);if(!d)return;
+  const node=d.node;
+  d.list.splice(d.index,1);
+  const t=find(targetId);
+  if(!t){model.tasks.push(node);return touch(dragId,"Move task");}
+  if(mode==="child"){t.node.children.push(node);t.node.collapsed=false;touch(dragId,"Nest under task");}
+  else{t.list.splice(t.index+(mode==="below"?1:0),0,node);touch(dragId,"Reorder task");}
+}
+
+/* ---------- wait escalation ----------
+   A task in WAIT carries `waitUntil` (YYYY-MM-DD). Once today is past that
+   date the task escalates to BLOCKED automatically and records why in
+   `escalatedFrom`, so the change is visible rather than silent. */
+function today(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function dueDays(n){
+  if(!n.waitUntil)return null;
+  const d=new Date(n.waitUntil+"T00:00:00");
+  return Math.round((d-today())/86400000);
+}
+function escalate(){
+  const hit=[];
+  walk(model.tasks,n=>{
+    if(n.status===S.WAIT&&n.waitUntil&&dueDays(n)<0){
+      n.status=S.BLOCKED;n.escalatedFrom=n.waitUntil;hit.push(n);
+    }
+  });
+  if(hit.length){
+    markDirty("edit",`Auto-block ${hit.length} overdue task${hit.length>1?"s":""}`);
+    flash(hit.length===1
+      ? `"${hit[0].title||"Untitled"}" passed its wait date — now blocked`
+      : `${hit.length} tasks passed their wait date — now blocked`);
+  }
+  return hit.length;
+}
+
+function setStatus(n,val){
+  n.status=val;
+  if(val!==S.WAIT&&val!==S.BLOCKED){delete n.waitUntil;delete n.escalatedFrom;}
+  if(val===S.WAIT&&!n.waitUntil){
+    const d=new Date();d.setDate(d.getDate()+7);
+    n.waitUntil=d.toISOString().slice(0,10);
+  }
+  if(val===S.DONE)walk(n.children,c=>c.status=S.DONE);
+  if(val===S.DONE){ // roll parents up if all siblings complete
+    let f=find(n.id);
+    while(f&&f.parent){const p=f.parent;if(leaves(p).every(l=>l.status===S.DONE))p.status=S.DONE;f=find(p.id);}
+  }
+}
+
+/* ---------- board ---------- */
+const LANES=[
+  {k:S.TODO,   label:"Open",       c:"var(--hold)",    hint:"Nothing queued",   glyph:"O"},
+  {k:S.WIP,    label:"In progress",c:"var(--caution)", hint:"Nothing started",  glyph:"W"},
+  {k:S.WAIT,   label:"Waiting",    c:"var(--wait)",    hint:"Nothing waiting",  glyph:"H"},
+  {k:S.BLOCKED,label:"Blocked",    c:"var(--fault)",   hint:"Nothing blocked",  glyph:"B"},
+  {k:S.DONE,   label:"Done",       c:"var(--nominal)", hint:"Nothing finished", glyph:"D"}
+];
+let collapsedLanes=new Set(["todo"]);
+const board=document.getElementById("board");
+let dragId=null;
+
+function crumbFor(id){
+  const parts=[];let f=find(id);
+  while(f&&f.parent){parts.unshift(f.parent.title||"untitled");f=find(f.parent.id);}
+  return parts.join(" / ");
+}
+/* Board shows leaf tasks only — parents are containers whose state is derived. */
+function boardItems(){
+  const out=[];
+  walk(model.tasks,(n,parent,d,path)=>{if(!n.children.length&&matchesText(n))out.push({n,path});});
+  return out;
+}
+function renderBoard(){
+  board.innerHTML="";
+  const items=boardItems();
+  LANES.forEach(L=>{
+    const lane=document.createElement("section");
+    const shut=collapsedLanes.has(L.k);
+    lane.className="lane"+(shut?" shut":"");
+    lane.style.setProperty("--lanec",L.c);lane.dataset.k=L.k;
+    const mine=items.filter(i=>i.n.status===L.k);
+
+    const hd=document.createElement("button");
+    hd.className="lane-hd";hd.setAttribute("aria-expanded",!shut);
+    hd.title=shut?`Expand ${L.label}`:`Collapse ${L.label}`;
+    hd.innerHTML=`<span class="tw">${shut?"▸":"▾"}</span><span class="nm">${L.label}</span><span class="ct">${mine.length}</span>`;
+    hd.onclick=()=>{shut?collapsedLanes.delete(L.k):collapsedLanes.add(L.k);renderBoard();};
+    lane.appendChild(hd);
+
+    const body=document.createElement("div");body.className="lane-body";
+    if(!mine.length){body.innerHTML=`<div class="lane-empty">${L.hint}</div>`;}
+    mine.forEach(({n,path})=>body.appendChild(cardEl(n,path,L)));
+    if(!shut)lane.appendChild(body);
+
+    lane.addEventListener("dragover",e=>{e.preventDefault();lane.classList.add("over");});
+    lane.addEventListener("dragleave",()=>lane.classList.remove("over"));
+    lane.addEventListener("drop",e=>{
+      e.preventDefault();lane.classList.remove("over");
+      if(!dragId)return;
+      const f=find(dragId);if(f){
+        setStatus(f.node,L.k);collapsedLanes.delete(L.k);
+        markDirty("edit",`Move to ${L.label}`);escalate();renderBoard();stats();
+      }
+      dragId=null;
+    });
+    board.appendChild(lane);
+  });
+  stats();
+  document.getElementById("stamp").textContent=new Date(model.updated).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
+}
+function cardEl(n,path,L){
+  const c=document.createElement("article");
+  c.className="card"+(n.status===S.DONE?" done":"");
+  c.draggable=true;c.tabIndex=0;
+  c.addEventListener("dragstart",e=>{dragId=n.id;c.classList.add("drag");e.dataTransfer.effectAllowed="move";});
+  c.addEventListener("dragend",()=>{c.classList.remove("drag");dragId=null;});
+
+  const crumb=crumbFor(n.id);
+  const head=document.createElement("div");
+  head.className="crumb";head.textContent=`${path.join(".")}${crumb?"  ·  "+crumb:""}`;
+  head.title=crumb;
+  const ttl=document.createElement("div");ttl.className="ttl";ttl.textContent=n.title||"Untitled task";
+  c.append(head,ttl);
+  if(n.status===S.WAIT&&n.waitUntil){
+    const dd=dueDays(n);
+    const w=document.createElement("div");w.className="cwait"+(dd<=1?" soon":"");
+    w.textContent = dd===0?"Due today · "+n.waitUntil : dd===1?"1 day left · "+n.waitUntil : `${dd} days left · ${n.waitUntil}`;
+    c.appendChild(w);
+  }
+  if(n.status===S.BLOCKED&&n.escalatedFrom){
+    const w=document.createElement("div");w.className="cwait over";
+    w.textContent="Wait date passed "+n.escalatedFrom;
+    c.appendChild(w);
+  }
+  if(n.note){const nt=document.createElement("div");nt.className="nt";nt.textContent=n.note;c.appendChild(nt);}
+
+  const foot=document.createElement("div");foot.className="foot";
+  const who=document.createElement("span");who.className="who";who.textContent=n.owner?"@"+n.owner:"";
+  foot.appendChild(who);
+  const mv=document.createElement("div");mv.className="moves";
+  LANES.filter(x=>x.k!==L.k).forEach(x=>{
+    const b=document.createElement("button");
+    b.textContent=x.glyph;
+    b.title=`Move to ${x.label}`;b.setAttribute("aria-label",`Move "${n.title||"untitled"}" to ${x.label}`);
+    b.onclick=()=>{setStatus(n,x.k);markDirty("edit",`Move to ${x.label}`);renderBoard();};
+    mv.appendChild(b);
+  });
+  foot.appendChild(mv);c.appendChild(foot);
+
+  c.addEventListener("keydown",e=>{
+    const i=LANES.findIndex(x=>x.k===n.status);
+    if(e.key==="ArrowRight"&&i<LANES.length-1){e.preventDefault();setStatus(n,LANES[i+1].k);markDirty("edit",`Move to ${LANES[i+1].label}`);renderBoard();}
+    if(e.key==="ArrowLeft"&&i>0){e.preventDefault();setStatus(n,LANES[i-1].k);markDirty("edit",`Move to ${LANES[i-1].label}`);renderBoard();}
+  });
+  return c;
+}
+
+function stats(){
+  let c={todo:0,wip:0,wait:0,blocked:0,done:0},total=0;
+  walk(model.tasks,n=>{if(!n.children.length){c[n.status]++;total++;}});
+  const pc=k=>total?(c[k]/total*100):0;
+  const bars=document.getElementById("bars").children;
+  bars[0].style.width=pc("done")+"%";bars[1].style.width=pc("wip")+"%";
+  bars[2].style.width=pc("wait")+"%";bars[3].style.width=pc("blocked")+"%";bars[4].style.width=pc("todo")+"%";
+  nDone.textContent=c.done;nWip.textContent=c.wip;nWait.textContent=c.wait;nBlk.textContent=c.blocked;nTodo.textContent=c.todo;
+  let all=0;walk(model.tasks,()=>all++);
+  countLine.textContent=`${all} tasks · ${total} leaf items · ${total?Math.round(c.done/total*100):0}% complete`;
+  paintTab(c,total,total?c.done/total:0);
+}
+/* ---------- tab identity ----------
+   The favicon is generated inline as an SVG data URI: a three-tier work
+   breakdown mark whose rings fill as the plan progresses, tinted by the most
+   urgent state in the plan (blocked > waiting > in progress > done > open).
+   No external file, so it keeps working from a local folder or a USB stick. */
+const favicon=document.getElementById("favicon");
+const PAL={
+  blocked:"#B02A2A", wait:"#C9A227", wip:"#B4630A", done:"#0F6E5C", todo:"#8A93A0"
+};
+function faviconSVG(pct,tint,badge){
+  const r=26, C=2*Math.PI*r, on=C*pct;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="12" fill="#12161C"/>
+  <g transform="translate(32,32)">
+    <circle r="${r}" fill="none" stroke="#39414F" stroke-width="7"/>
+    <circle r="${r}" fill="none" stroke="${tint}" stroke-width="7" stroke-linecap="round"
+            stroke-dasharray="${on.toFixed(2)} ${(C-on).toFixed(2)}" transform="rotate(-90)"/>
+  </g>
+  <g fill="#EDEFF2">
+    <rect x="22" y="21" width="20" height="4" rx="2"/>
+    <rect x="26" y="30" width="16" height="4" rx="2"/>
+    <rect x="30" y="39" width="12" height="4" rx="2"/>
+  </g>
+  ${badge?`<circle cx="52" cy="12" r="10" fill="${badge}" stroke="#12161C" stroke-width="3"/>`:""}
+</svg>`;
+}
+function paintTab(c,total,pct){
+  /* tint = the state that most deserves attention right now */
+  const tint = c.blocked?PAL.blocked : c.wait?PAL.wait : c.wip?PAL.wip
+             : (total&&c.done===total)?PAL.done : PAL.todo;
+  /* corner dot only when something needs a decision */
+  const badge = c.blocked?PAL.blocked : c.wait?PAL.wait : null;
+  favicon.href="data:image/svg+xml,"+encodeURIComponent(faviconSVG(pct,tint,badge));
+
+  const open=total-c.done;
+  const flag=c.blocked?"! ":c.wait?"· ":"";
+  const nm=(planName.value||"Untitled plan").trim();
+  document.title = total
+    ? `${flag}${open?open+" open":"complete"} — ${nm}${dirty?" •":""}`
+    : `${nm}${dirty?" •":""}`;
+}
+
+function touch(focusId,label){
+  markDirty("edit",label||"Edit");render();
+  const id=focusId||selected;
+  if(id){const el=tree.querySelector(`.row[data-id="${id}"] .title`);if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}}
+}
+
+/* ---------- keyboard ---------- */
+function keys(e,n){
+  const f=find(n.id);if(!f)return;
+  const mod=e.metaKey||e.ctrlKey;
+  if(e.key==="Enter"&&mod){const c=newTask();n.children.push(c);n.collapsed=false;selected=c.id;e.preventDefault();return touch(c.id,"Add subtask");}
+  if(e.key==="Enter"){const s=newTask();f.list.splice(f.index+1,0,s);selected=s.id;e.preventDefault();return touch(s.id,"Add task");}
+  if(e.key==="Tab"&&!e.shiftKey){e.preventDefault();return indent(n.id);}
+  if(e.key==="Tab"&&e.shiftKey){e.preventDefault();return outdent(n.id);}
+  if(mod&&(e.key==="ArrowUp"||e.key==="ArrowDown")){
+    e.preventDefault();return moveVert(n.id,e.key==="ArrowUp"?-1:1);
+  }
+  if((e.key==="ArrowUp"||e.key==="ArrowDown")&&!mod){
+    const rows=[...tree.querySelectorAll(".title")];const i=rows.indexOf(e.target);
+    const nx=rows[i+(e.key==="ArrowUp"?-1:1)];if(nx){e.preventDefault();nx.focus();nx.setSelectionRange(nx.value.length,nx.value.length);}
+    return;
+  }
+  if(e.key==="Backspace"&&n.title===""&&!n.children.length){
+    e.preventDefault();const rows=[...tree.querySelectorAll(".title")];const i=rows.indexOf(e.target);
+    f.list.splice(f.index,1);markDirty("edit","Delete empty task");render();const prev=[...tree.querySelectorAll(".title")][Math.max(0,i-1)];
+    if(prev){prev.focus();prev.setSelectionRange(prev.value.length,prev.value.length);}
+  }
+}
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="s"){e.preventDefault();e.shiftKey?saveAs():save();}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="o"){e.preventDefault();open_();}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="z"&&!e.shiftKey){e.preventDefault();undo();}
+  if((e.metaKey||e.ctrlKey)&&(e.key.toLowerCase()==="y"||(e.key.toLowerCase()==="z"&&e.shiftKey))){e.preventDefault();redo();}
+});
+
+/* ---------- notes ---------- */
+const note=document.getElementById("note"),noteLabel=document.getElementById("noteLabel");
+function syncNote(){
+  const f=selected&&find(selected);
+  if(!f){note.disabled=true;note.value="";noteLabel.textContent="Notes — select a task";return;}
+  note.disabled=false;note.value=f.node.note||"";
+  noteLabel.textContent=`Notes — ${f.path.join(".")} ${f.node.title||"untitled"}`;
+}
+note.oninput=()=>{
+  const f=selected&&find(selected);if(!f)return;
+  f.node.note=note.value;markDirty("text","Edit note");
+  const cell=tree.querySelector(`.row[data-id="${f.node.id}"] .notepv`);
+  if(cell){
+    const txt=note.value.replace(/\s+/g," ").trim();
+    const b=cell.querySelector("button");
+    b.textContent=txt||"add note";b.className=txt?"":"blank";b.title=txt||"Add a note to this task";
+    const pin=cell.querySelector(".pin");
+    if(txt&&!pin){const d=document.createElement("span");d.className="pin";cell.prepend(d);}
+    if(!txt&&pin)pin.remove();
+  }
+};
+
+/* ---------- file I/O ---------- */
+/* Uses the File System Access API (Chrome/Edge) to hold a real handle to the
+   opened file, so Save overwrites it in place. Falls back to download+picker
+   in Firefox/Safari, where the browser gives no persistent write access. */
+const canFS = typeof window.showSaveFilePicker === "function" && typeof window.showOpenFilePicker === "function";
+/* Manual saving; external file changes are reviewed against an in-memory baseline. */
+let handle=null,dirty=false,diskText=null,diskBase=null,ioBusy=false,syncBlocked=false,lastEdit=0,changeReview=null;
+const syncNotice=document.getElementById("syncNotice"),syncMessage=document.getElementById("syncMessage"),changesDialog=document.getElementById("changesDialog");
+const SYNC_MISSING=Symbol("missing");
+function syncClone(v){return v===SYNC_MISSING||v===undefined?v:JSON.parse(JSON.stringify(v));}
+function syncStable(v){if(v===SYNC_MISSING)return "<missing>";if(Array.isArray(v))return "["+v.map(syncStable).join(",")+"]";if(v&&typeof v==="object")return "{"+Object.keys(v).sort().map(k=>JSON.stringify(k)+":"+syncStable(v[k])).join(",")+"}";return JSON.stringify(v);}
+function syncEqual(a,b){return syncStable(a)===syncStable(b);}
+function syncContent(d){const o={...d};delete o.updated;return o;}
+function syncWorking(){return syncClone({...model,name:planName.value||"Untitled plan"});}
+function syncGet(o,k){return o&&Object.hasOwn(o,k)?o[k]:SYNC_MISSING;}
+function syncObject(v){return v!==SYNC_MISSING&&v!==null&&typeof v==="object"&&!Array.isArray(v);}
+function blockSync(message){syncBlocked=true;syncMessage.textContent=message;syncNotice.hidden=false;document.getElementById("syncReview").hidden=!changeReview;paintFile();}
+function clearSync(){syncBlocked=false;syncNotice.hidden=true;}
+function syncCloseReview(){changeReview=null;if(changesDialog.open)changesDialog.close();}
+function syncTrack(text,h){diskText=text;diskBase=JSON.parse(text);handle=h;syncCloseReview();clearSync();}
+function validExternal(text){
+  const d=JSON.parse(text),ids=new Set();
+  function check(list){
+    if(!Array.isArray(list))throw Error("Invalid task list");
+    for(const n of list){
+      if(!n||typeof n.id!=="string"||!n.id||ids.has(n.id)||!["title","owner","note"].every(k=>typeof n[k]==="string")||!Object.values(S).includes(n.status)||typeof n.collapsed!=="boolean")throw Error("Invalid task");
+      for(const k of ["waitUntil","escalatedFrom"])if(n[k]!==undefined&&rmDay(n[k])===null)throw Error("Invalid task date");
+      ids.add(n.id);check(n.children);
+    }
+  }
+  if(!d||d.version!==1||typeof d.name!=="string"||typeof d.updated!=="string"||!Number.isFinite(Date.parse(d.updated)))throw Error("Invalid plan");check(d.tasks);return d;
+}
+function syncFlat(plan){
+  const meta=syncClone(plan),nodes=Object.create(null),orders=Object.create(null);delete meta.tasks;delete meta.updated;
+  function visit(list,parent=null){orders[JSON.stringify(parent)]=list.map(t=>t.id);for(const task of list){const data={...task};delete data.children;nodes[task.id]={data,parent};visit(task.children||[],task.id);}}
+  visit(plan.tasks||[]);return {meta,nodes,orders};
+}
+function syncMerge(base,local,remote,choices={}){
+  const B=syncFlat(base),L=syncFlat(local),R=syncFlat(remote);let conflicts=[];
+  function conflict(path,b,l,r,label){const key=JSON.stringify(path);conflicts.push({key,path,label,base:b,local:l,remote:r});return syncClone(choices[key]==="remote"?r:l);}
+  function mergeOrder(b,l,r,allowed,path){
+    const wanted=new Set(allowed),clean=a=>[...new Set((a||[]).filter(id=>wanted.has(id)))];b=clean(b);l=clean(l);r=clean(r);
+    const all=[...new Set([...l,...r,...b,...allowed])],common=new Set(b.filter(id=>l.includes(id)&&r.includes(id))),order=a=>a.filter(id=>common.has(id));
+    const lc=!syncEqual(order(l),order(b)),rc=!syncEqual(order(r),order(b));
+    function choose(){const selected=conflict(path,b,l,r,"Task/card order");return [...new Set([...selected,...all])];}
+    if(lc&&rc&&!syncEqual(order(l),order(r)))return choose();
+    const edges=new Map(all.map(id=>[id,new Set()])),degrees=new Map(all.map(id=>[id,0]));
+    function connect(seq,insertionsOnly){for(let i=1;i<seq.length;i++){const a=seq[i-1],z=seq[i];if(insertionsOnly&&b.includes(a)&&b.includes(z))continue;if(!edges.get(a).has(z)){edges.get(a).add(z);degrees.set(z,degrees.get(z)+1);}}}
+    connect(l,rc&&!lc);connect(r,lc&&!rc);
+    const result=[],ready=all.filter(id=>degrees.get(id)===0);while(ready.length){const id=ready.shift();result.push(id);for(const next of edges.get(id)){degrees.set(next,degrees.get(next)-1);if(degrees.get(next)===0)ready.push(next);}}
+    return result.length===all.length?result:choose();
+  }
+  function merge(b,l,r,path){
+    if(syncEqual(l,r))return syncClone(l);if(syncEqual(l,b))return syncClone(r);if(syncEqual(r,b))return syncClone(l);
+    if(syncObject(b)&&syncObject(l)&&syncObject(r)){
+      const out=Object.create(null);for(const k of new Set([...Object.keys(b),...Object.keys(l),...Object.keys(r)])){const v=merge(syncGet(b,k),syncGet(l,k),syncGet(r,k),[...path,k]);if(v!==SYNC_MISSING)out[k]=v;}return out;
+    }
+    const keyed=a=>Array.isArray(a)&&a.every(x=>syncObject(x)&&typeof x.id==="string")&&new Set(a.map(x=>x.id)).size===a.length;
+    if(keyed(b)&&keyed(l)&&keyed(r)){
+      const index=a=>Object.fromEntries(a.map(x=>[x.id,x])),items=merge(index(b),index(l),index(r),path);
+      return mergeOrder(b.map(x=>x.id),l.map(x=>x.id),r.map(x=>x.id),Object.keys(items),[...path,"order"]).map(id=>items[id]);
+    }
+    return conflict(path,b,l,r);
+  }
+  const meta=merge(B.meta,L.meta,R.meta,["plan"]),nodes=merge(B.nodes,L.nodes,R.nodes,["task"]);let tasks;
+  try{
+    const groups=new Map([[null,[]]]);
+    for(const [id,n]of Object.entries(nodes)){
+      if(n.data.id!==id||n.parent!==null&&!Object.hasOwn(nodes,n.parent))throw Error("Missing parent");
+      const seen=new Set([id]);let parent=n.parent;while(parent!==null){if(seen.has(parent))throw Error("Hierarchy cycle");seen.add(parent);parent=nodes[parent].parent;}
+      if(!groups.has(n.parent))groups.set(n.parent,[]);groups.get(n.parent).push(id);
+    }
+    function build(parent){const ids=groups.get(parent)||[],k=JSON.stringify(parent);return mergeOrder(B.orders[k],L.orders[k],R.orders[k],ids,["order",k]).map(id=>({...nodes[id].data,children:build(id)}));}
+    tasks=build(null);
+  }catch(e){
+    conflicts=conflicts.filter(c=>c.path[0]==="plan");tasks=conflict(["hierarchy"],base.tasks,local.tasks,remote.tasks,"Task hierarchy: a moved or edited task has a deleted parent, or the moves create a cycle. Choose one complete task tree.");
+  }
+  function cleanRoadmap(value){
+    if(value===undefined||value===SYNC_MISSING)return value;
+    if(!syncObject(value)||!Array.isArray(value.nodes)||!Array.isArray(value.edges))throw Error("Invalid roadmap");
+    const ids=new Set(),refs=new Set(),taskIds=new Set();walk(tasks,t=>taskIds.add(t.id));const out=syncClone(value);
+    out.nodes=out.nodes.map(n=>{if(!n||typeof n.id!=="string"||ids.has(n.id)||!Array.isArray(n.taskIds))throw Error("Invalid milestone");ids.add(n.id);n.taskIds=n.taskIds.filter(id=>taskIds.has(id));for(const id of n.taskIds){if(refs.has(id))throw Error("Task in two gates");refs.add(id);}return n;}).filter(n=>n.taskIds.length);
+    const live=new Set(out.nodes.map(n=>n.id));out.edges=out.edges.filter(e=>e&&live.has(e.from)&&live.has(e.to));if(rmHasCycle(out.edges))throw Error("Circular roadmap");return out;
+  }
+  if(meta.roadmap!==undefined){
+    try{meta.roadmap=cleanRoadmap(meta.roadmap);}
+    catch(e){conflicts=conflicts.filter(c=>!(c.path[0]==="plan"&&c.path[1]==="roadmap"));const v=conflict(["plan","roadmap"],syncGet(base,"roadmap"),syncGet(local,"roadmap"),syncGet(remote,"roadmap"),"Roadmap layout: the combined connections or groups conflict. Choose one layout.");if(v===SYNC_MISSING)delete meta.roadmap;else {try{meta.roadmap=cleanRoadmap(v);}catch(_){return {plan:null,conflicts,error:"The selected roadmap is invalid. Reject the external changes or fix the JSON."};}}}
+  }
+  const plan={...meta,tasks,updated:local.updated||remote.updated};
+  try{validExternal(JSON.stringify(plan));}catch(e){return {plan:null,conflicts,error:"The merged plan is invalid. Reject the external changes or fix the JSON."};}
+  return {plan,conflicts};
+}
+function syncDiff(base,remote){
+  const b=syncFlat(base),r=syncFlat(remote),changes=[];
+  for(const id of new Set([...Object.keys(b.nodes),...Object.keys(r.nodes)])){
+    const before=b.nodes[id],after=r.nodes[id],name=after?.data.title||before?.data.title||"Untitled task";
+    if(!before||!after){changes.push({label:(before?"Deleted: ":"Added: ")+name+" ["+id+"]",before:before||SYNC_MISSING,after:after||SYNC_MISSING});continue;}
+    for(const key of new Set([...Object.keys(before.data),...Object.keys(after.data)]))if(!syncEqual(syncGet(before.data,key),syncGet(after.data,key)))changes.push({label:name+" · "+key,before:syncGet(before.data,key),after:syncGet(after.data,key)});
+    if(before.parent!==after.parent)changes.push({label:name+" · parent",before:before.parent===null?"Root":b.nodes[before.parent]?.data.title||before.parent,after:after.parent===null?"Root":r.nodes[after.parent]?.data.title||after.parent});
+  }
+  for(const key of new Set([...Object.keys(b.meta),...Object.keys(r.meta)]))if(!syncEqual(syncGet(b.meta,key),syncGet(r.meta,key)))changes.push({label:key==="roadmap"?"Roadmap layout":"Plan · "+key,before:syncGet(b.meta,key),after:syncGet(r.meta,key)});
+  for(const key of Object.keys(b.orders)){
+    const before=b.orders[key],after=r.orders[key]||[],shared=new Set(before.filter(id=>after.includes(id)));
+    if(!syncEqual(before.filter(id=>shared.has(id)),after.filter(id=>shared.has(id))))changes.push({label:"Task order · "+(JSON.parse(key)===null?"Root":r.nodes[JSON.parse(key)]?.data.title||JSON.parse(key)),before,after});
+  }
+  return changes;
+}
+function syncEl(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
+function syncValue(v){return v===SYNC_MISSING?"(not present)":typeof v==="string"?v:JSON.stringify(v,null,2);}
+function syncValues(box,values){for(const [label,v]of values){const section=syncEl("div",undefined,"sync-value");section.append(syncEl("strong",label),syncEl("pre",syncValue(v)));box.appendChild(section);}}
+function syncConflictLabel(c){if(c.label)return c.label;const p=c.path;if(p[0]==="task"){const title=changeReview.local.tasks&&syncFlat(changeReview.local).nodes[p[1]]?.data.title||syncFlat(changeReview.remote).nodes[p[1]]?.data.title||p[1];return title+" · "+(p.slice(2).filter(k=>k!=="data").join(" / ")||"deleted or edited task");}return p.join(" / ");}
+function syncRenderReview(){
+  const review=changeReview;if(!review)return;
+  const result=syncMerge(review.base,review.local,review.remote,review.choices);review.result=result;
+  const changes=syncDiff(review.base,review.remote),list=document.getElementById("changesList"),conflicts=document.getElementById("changesConflicts");list.replaceChildren();conflicts.replaceChildren();
+  document.getElementById("changesSummary").textContent=changes.length+" external change"+(changes.length===1?"":"s")+" in "+review.h.name+". Review before updating your browser copy.";
+  for(const change of changes){const item=syncEl("details");item.open=changes.length<=6;item.appendChild(syncEl("summary",change.label));syncValues(item,[["Previously loaded",change.before],["On disk",change.after]]);list.appendChild(item);}
+  if(result.conflicts.length)conflicts.appendChild(syncEl("h3","Choose how to resolve overlapping changes"));
+  for(const c of result.conflicts){
+    const item=syncEl("section",undefined,"sync-conflict"),label=syncEl("label",syncConflictLabel(c));
+    const select=syncEl("select");select.setAttribute("aria-label",syncConflictLabel(c));for(const [value,text]of [["","Choose a version…"],["local","Keep browser edit"],["remote","Use disk edit"]]){const option=syncEl("option",text);option.value=value;select.appendChild(option);}select.value=review.choices[c.key]||"";
+    select.onchange=()=>{review.choices[c.key]=select.value;syncRenderReview();};label.appendChild(select);item.appendChild(label);
+    syncValues(item,[["Originally loaded",c.base],["Browser",c.local],["Disk",c.remote]]);conflicts.appendChild(item);
+  }
+  document.getElementById("changesError").textContent=result.error||"";
+  document.getElementById("changesMerge").disabled=!!result.error||result.conflicts.some(c=>!review.choices[c.key]);
+}
+function syncPresentReview(){
+  if(!changeReview)return;const local=syncWorking();if(!syncEqual(syncContent(local),syncContent(changeReview.local))){changeReview.local=local;changeReview.choices={};}
+  syncRenderReview();if(!changesDialog.open)changesDialog.showModal();
+}
+function syncOffer(text,h=handle){
+  const remote=validExternal(text);
+  if(syncEqual(syncContent(remote),syncContent(diskBase))){diskText=text;diskBase=remote;syncCloseReview();clearSync();return true;}
+  if(!changeReview||changeReview.text!==text)changeReview={text,remote,base:syncClone(diskBase),local:syncWorking(),choices:{},h};
+  blockSync("External changes are waiting for review. Merge or reject them before saving to this file.");syncPresentReview();return false;
+}
+async function checkDisk(){
+  const h=handle,text=await (await h.getFile()).text();
+  if(typeof rmGesture!=="undefined"&&rmGesture)return false;
+  if(text===diskText&&!changeReview){clearSync();return true;}
+  return syncOffer(text,h);
+}
+async function monitorTick(){
+  if(!handle||ioBusy||changeReview||document.hidden||typeof rmGesture!=="undefined"&&rmGesture)return;
+  ioBusy=true;try{await checkDisk();}catch(e){blockSync("Cannot read a valid plan from disk. Your browser copy is retained; checking again every 5 seconds.");}finally{ioBusy=false;paintFile();}
+}
+async function syncDecide(accept){
+  if(!changeReview||ioBusy)return;ioBusy=true;
+  try{
+    const review=changeReview,text=await (await review.h.getFile()).text();
+    if(text!==review.text){if(syncOffer(text,review.h))flash("The external edits were reverted. There are no disk changes left to review.");else document.getElementById("changesError").textContent="The disk file changed again. Review the refreshed changes before choosing.";return;}
+    if(!syncEqual(syncContent(syncWorking()),syncContent(review.local))){review.local=syncWorking();review.choices={};syncRenderReview();document.getElementById("changesError").textContent="The browser copy changed. Review the refreshed merge before choosing.";return;}
+    let merged;
+    if(accept){const result=syncMerge(review.base,review.local,review.remote,review.choices);if(result.error||result.conflicts.some(c=>!review.choices[c.key])){syncRenderReview();return;}merged=result.plan;}
+    diskText=review.text;diskBase=syncClone(review.remote);syncCloseReview();clearSync();
+    if(accept){model=merged;planName.value=model.name;if(selected&&!find(selected))selected=null;markDirty("edit","Merge external changes");escalate();syncNote();render();}
+    dirty=!syncEqual(syncContent(syncWorking()),syncContent(diskBase));paintFile();
+    flash(accept?(dirty?"Changes merged in the browser. Click Save to write them to disk.":"External changes merged. Browser and disk now match."):"External changes rejected in the browser. Disk is unchanged; Save will write your browser version.");
+  }catch(e){document.getElementById("changesError").textContent="Cannot read or merge this file. Your browser copy is unchanged. Try again when the file is valid.";}
+  finally{ioBusy=false;paintFile();}
+}
+document.getElementById("changesMerge").onclick=()=>syncDecide(true);
+document.getElementById("changesReject").onclick=()=>syncDecide(false);
+document.getElementById("changesLater").onclick=()=>changesDialog.close();
+document.getElementById("syncReview").onclick=syncPresentReview;
+document.getElementById("syncCopy").onclick=()=>download(true);
+document.getElementById("syncRetry").onclick=()=>changeReview?syncPresentReview():monitorTick();
+setInterval(monitorTick,5000);window.addEventListener("focus",monitorTick);document.addEventListener("visibilitychange",()=>{if(!document.hidden)monitorTick();});
+
+const PICKER={types:[{description:"Task plan",accept:{"application/json":[".json"]}}]};
+
+function fileName(){
+  return (planName.value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"plan")+".tasks.json";
+}
+/* ---------- history ----------
+   `baseline` always holds a snapshot of the model as it was after the last
+   committed step. Mutators call markDirty() AFTER changing the model, so the
+   baseline is exactly the pre-change state we need to push onto the undo stack.
+   Consecutive text edits coalesce so undo steps back by word-groups, not keys. */
+const HIST_MAX=120;
+let past=[], future=[], baseline=null, lastKind=null, lastStamp=0;
+
+function snapshot(){const d={...model,name:planName.value};delete d.updated;return JSON.stringify(d);}
+function resetHistory(){past=[];future=[];baseline=snapshot();lastKind=null;paintHistory();}
+
+function markDirty(kind,label){
+  if(model.roadmap)model.roadmap=rmReconcile(model.roadmap);
+  dirty=true;lastEdit=Date.now();model.updated=new Date().toISOString();
+  const now=Date.now();
+  const coalesce = kind==="text" && lastKind==="text" && (now-lastStamp)<900;
+  if(baseline!==null && !coalesce){
+    past.push({snap:baseline,label:label||"Edit"});
+    if(past.length>HIST_MAX)past.shift();
+    future=[];
+  }
+  lastKind=kind||"edit";lastStamp=now;
+  baseline=snapshot();
+  paintFile();paintHistory();
+}
+function restore(snap){
+  const d=JSON.parse(snap);
+  model=d;planName.value=d.name;
+  model.updated=new Date().toISOString();
+  if(selected&&!find(selected))selected=null;
+  baseline=snapshot();lastKind=null;
+  dirty=true;lastEdit=Date.now();syncNote();render();paintFile();paintHistory();
+}
+function undo(){
+  if(!past.length)return flash("Nothing left to undo");
+  const step=past.pop();
+  future.push({snap:baseline,label:step.label});
+  restore(step.snap);
+  flash("Undid: "+step.label);
+}
+function redo(){
+  if(!future.length)return flash("Nothing to redo");
+  const step=future.pop();
+  past.push({snap:baseline,label:step.label});
+  restore(step.snap);
+  flash("Redid: "+step.label);
+}
+function paintHistory(){
+  undoBtn.disabled=!past.length;redoBtn.disabled=!future.length;
+  undoBtn.title=past.length?"Undo "+past[past.length-1].label:"Nothing to undo";
+  redoBtn.title=future.length?"Redo "+future[future.length-1].label:"Nothing to redo";
+  histCount.textContent=past.length?past.length+" step"+(past.length>1?"s":"")+" back":"no history";
+}
+
+/* ---------- toast ---------- */
+let toastT=null;
+function flash(msg,action){
+  clearTimeout(toastT);
+  toast.innerHTML="";
+  const t=document.createElement("span");t.textContent=msg;toast.appendChild(t);
+  if(action){
+    const b=document.createElement("button");b.textContent=action.label;
+    b.onclick=()=>{action.fn();hideToast();};
+    toast.appendChild(b);
+  }
+  toast.hidden=false;
+  requestAnimationFrame(()=>toast.classList.add("in"));
+  toastT=setTimeout(hideToast,action?7000:2600);
+}
+function hideToast(){toast.classList.remove("in");toastT=setTimeout(()=>toast.hidden=true,220);}
+
+function paintFile(){
+  fileLbl.textContent = handle ? handle.name
+    : canFS ? "Not saved to a file yet"
+    : "Browser downloads only — external file monitoring unavailable";
+  dirtyDot.hidden = !dirty || !handle;
+  if(typeof stats==="function")try{stats();}catch(e){}
+  saveBtn.textContent = handle ? (dirty?"Save •":"Saved") : "Save as…";
+  saveBtn.title = handle ? `Save to ${handle.name} after checking external changes` : "Choose where to save this plan";
+}
+function serialize(){
+  model.name=planName.value||"Untitled plan";model.updated=new Date().toISOString();
+  return JSON.stringify(model,null,2);
+}
+async function writeTo(h){
+  const same=handle&&await h.isSameEntry(handle);
+  if(same&&!(await checkDisk()))return;
+  const expected=same?diskText:await (await h.getFile()).text();
+  if(expected===null)throw Error("No disk baseline");
+  const current=await (await h.getFile()).text();
+  if(current!==expected){if(same)syncOffer(current,h);else blockSync("The destination changed before saving. Nothing was written. Try Save as… again.");return;}
+  const before=snapshot(),payload=serialize(),w=await h.createWritable();
+  try{
+    await w.write(new Blob([payload],{type:"application/json"}));
+    const latest=await (await h.getFile()).text();
+    if(latest!==expected){await w.abort();if(same)syncOffer(latest,h);else blockSync("The destination changed during saving. Saving was cancelled; your browser copy is retained.");return;}
+    await w.close();
+  }catch(e){try{await w.abort();}catch(_){}throw e;}
+  syncTrack(payload,h);dirty=snapshot()!==before;paintFile();
+}
+function download(keepDirty=false){
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([serialize()],{type:"application/json"}));
+  a.download=keepDirty?"local-copy-"+fileName():fileName();a.click();URL.revokeObjectURL(a.href);
+  if(!keepDirty)dirty=false;paintFile();
+}
+async function save(){
+  if(ioBusy)return;
+  if(!canFS)return download();
+  if(!handle)return saveAs();
+  ioBusy=true;
+  try{
+    if(await handle.requestPermission({mode:"readwrite"})!=="granted")throw Error("Permission denied");
+    await writeTo(handle);
+  }catch(err){blockSync("Could not save. Your changes remain here. Check permissions and retry Save, or use Save as….");}
+  finally{ioBusy=false;paintFile();}
+}
+async function saveAs(){
+  if(ioBusy)return;
+  if(!canFS)return download();
+  ioBusy=true;
+  try{await writeTo(await showSaveFilePicker({...PICKER,suggestedName:handle?handle.name:fileName()}));}
+  catch(err){if(err.name!=="AbortError")blockSync("Could not save. Your changes remain here; try Save as… again.");}
+  finally{ioBusy=false;paintFile();}
+}
+function apply(d,fallbackName){
+  if(!d||!Array.isArray(d.tasks))throw new Error("bad");
+  const VALID=[S.TODO,S.WIP,S.WAIT,S.BLOCKED,S.DONE];
+  const norm=l=>l.map(t=>{
+    const o={...t,id:t.id||uid(),title:t.title||"",status:VALID.includes(t.status)?t.status:S.TODO,
+      owner:t.owner||"",note:t.note||"",collapsed:!!t.collapsed,children:norm(t.children||[])};
+    if(/^\d{4}-\d{2}-\d{2}$/.test(t.waitUntil||""))o.waitUntil=t.waitUntil;
+    if(t.escalatedFrom)o.escalatedFrom=t.escalatedFrom;
+    return o;
+  });
+  model={...d,version:1,name:d.name||fallbackName,updated:d.updated||new Date().toISOString(),tasks:norm(d.tasks)};
+  planName.value=model.name;selected=null;dirty=false;syncNote();resetHistory();escalate();render();paintFile();
+}
+function confirmDiscard(){
+  return !dirty || confirm("This plan has unsaved changes. Open another file and discard them?");
+}
+async function open_(){
+  if(ioBusy||!confirmDiscard())return;
+  if(!canFS)return fileInput.click();
+  ioBusy=true;
+  try{
+    const [h]=await showOpenFilePicker(PICKER);
+    const txt=await (await h.getFile()).text();
+    apply(JSON.parse(txt),h.name);
+    syncTrack(txt,h);paintFile();
+  }catch(err){
+    if(err.name==="AbortError")return;
+    alert("That file isn't a task plan this app can read. Open a .tasks.json file saved here.");
+  }finally{ioBusy=false;}
+}
+function load(file){
+  const r=new FileReader();
+  r.onload=()=>{try{apply(JSON.parse(r.result),file.name);handle=null;diskText=null;diskBase=null;syncCloseReview();clearSync();paintFile();}
+    catch(err){alert("That file isn't a task plan this app can read. Open a .tasks.json file saved here.");}};
+  r.readAsText(file);
+}
+function exportMd(){
+  let out=`# ${planName.value}\n\n`;
+  const mark={todo:"[ ]",wip:"[~]",wait:"[>]",blocked:"[!]",done:"[x]"};
+  walk(model.tasks,(n,p,d,path)=>{
+    out+=`${"  ".repeat(d)}- ${mark[n.status]} ${path.join(".")} ${n.title}`+(n.status===S.WAIT&&n.waitUntil?` (waiting until ${n.waitUntil})`:"")+(n.owner?` — @${n.owner}`:"")+"\n";
+    if(n.note)out+=`${"  ".repeat(d+1)}> ${n.note.replace(/\n/g," ")}\n`;
+  });
+  const blob=new Blob([out],{type:"text/markdown"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=(planName.value.toLowerCase().replace(/[^a-z0-9]+/g,"-")||"plan")+".md";a.click();URL.revokeObjectURL(a.href);
+}
+
+/* ---------- roadmap data (independent of the task hierarchy) ---------- */
+const RM_DAY=36, RM_WIDTH=260;
+function rmToday(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function rmDay(date){
+  if(typeof date!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(date))return null;
+  const n=Date.parse(date+"T00:00:00Z");
+  return Number.isFinite(n)&&new Date(n).toISOString().slice(0,10)===date?n/86400000:null;
+}
+function rmDate(day){return new Date(day*86400000).toISOString().slice(0,10);}
+function rmDefault(){
+  const r={version:1,origin:rmToday(),nodes:[],edges:[]};
+  let row=0;
+  function branch(n,parent,depth){
+    const id="task-"+n.id;
+    const node={id,taskIds:[n.id],day:depth*10,y:0};r.nodes.push(node);
+    if(parent)r.edges.push({id:"edge-"+n.id,from:"task-"+parent.id,to:id,fromPort:"right",toPort:"left"});
+    let ys;
+    if(depth===1&&n.children.length){
+      const taskIds=[];walk(n.children,t=>taskIds.push(t.id));
+      const gate={id:"branch-"+n.id,groupParentId:n.id,title:n.title||"Checklist",taskIds,day:20,y:36+row++*210};
+      r.nodes.push(gate);r.edges.push({id:"branch-edge-"+n.id,from:id,to:gate.id,fromPort:"right",toPort:"left"});ys=[gate.y];
+    }else ys=n.children.map(child=>branch(child,n,depth+1));
+    node.y=ys.length?(ys[0]+ys.at(-1))/2:36+row++*210;return node.y;
+  }
+  model.tasks.forEach(n=>branch(n,null,0));
+  return r;
+}
+function rmReconcile(source){
+  if(!source||typeof source!=="object"||Array.isArray(source))source=rmDefault();
+  const r=JSON.parse(JSON.stringify(source||rmDefault())), tasks=new Map(), used=new Set(), nodeIds=new Set();
+  walk(model.tasks,n=>tasks.set(n.id,n));
+  r.version=1;if(rmDay(r.origin)===null)r.origin=rmToday();
+  r.nodes=(Array.isArray(r.nodes)?r.nodes:[]).filter(n=>{
+    if(!n||typeof n.id!=="string"||!n.id||nodeIds.has(n.id))return false;
+    n.taskIds=(Array.isArray(n.taskIds)?n.taskIds:[]).filter(id=>{if(!tasks.has(id)||used.has(id))return false;used.add(id);return true;});
+    if(!n.taskIds.length)return false;
+    nodeIds.add(n.id);n.day=Number.isFinite(n.day)?Math.max(-365000,Math.min(365000,n.day)):0;
+    n.y=Number.isFinite(n.y)?Math.max(24,Math.min(100000,n.y)):36;
+    if(typeof n.title!=="string")delete n.title;
+    return true;
+  });
+  const edges=new Set(),edgeIds=new Set();
+  r.edges=(Array.isArray(r.edges)?r.edges:[]).filter(e=>{
+    if(!e||!nodeIds.has(e.from)||!nodeIds.has(e.to)||e.from===e.to)return false;
+    const key=JSON.stringify([e.from,e.to]);if(edges.has(key))return false;edges.add(key);
+    if(typeof e.id!=="string"||!e.id||edgeIds.has(e.id))e.id=uid();
+    while(edgeIds.has(e.id))e.id=uid();edgeIds.add(e.id);
+    for(const k of ["fromPort","toPort"])if(!["left","right"].includes(e[k]))e[k]=k==="fromPort"?"right":"left";
+    return true;
+  });
+  walk(model.tasks,(t,parent,depth)=>{
+    if(used.has(t.id))return;
+    if(depth>=2){
+      let enclosing=find(t.id)?.parent,nearestGate=null;
+      while(enclosing&&!nearestGate){nearestGate=r.nodes.find(n=>n.groupParentId===enclosing.id);enclosing=find(enclosing.id)?.parent;}
+      if(nearestGate){nearestGate.taskIds.push(t.id);used.add(t.id);return;}
+      let ancestor=find(t.id);while(ancestor&&ancestor.path.length>2)ancestor=find(ancestor.parent.id);
+      const parentId=ancestor?.node.id;
+      let gate=r.nodes.find(n=>n.groupParentId===parentId);
+      // Add new deep work to its default gate; never regroup existing manual nodes.
+      if(!gate){
+        let id="branch-"+parentId;while(nodeIds.has(id))id+="-new";nodeIds.add(id);
+        gate={id,groupParentId:parentId,title:ancestor?.node.title||"Checklist",taskIds:[],day:20,y:Math.max(0,...r.nodes.map(x=>x.y))+210};r.nodes.push(gate);
+        const p=r.nodes.find(n=>n!==gate&&n.taskIds.includes(parentId));if(p)r.edges.push({id:uid(),from:p.id,to:gate.id,fromPort:"right",toPort:"left"});
+      }
+      gate.taskIds.push(t.id);used.add(t.id);return;
+    }
+    let id="task-"+t.id;while(nodeIds.has(id))id+="-new";nodeIds.add(id);
+    const n={id,taskIds:[t.id],day:depth*10,y:Math.max(0,...r.nodes.map(x=>x.y))+210};
+    r.nodes.push(n);used.add(t.id);
+    const p=parent&&r.nodes.find(x=>x!==n&&x.taskIds.includes(parent.id));
+    if(p)r.edges.push({id:uid(),from:p.id,to:id,fromPort:"right",toPort:"left"});
+  });
+  return r;
+}
+function rmTasks(n){return n.taskIds.map(id=>find(id)?.node).filter(Boolean);}
+function rmIsGroup(n){return n.taskIds.length>1||typeof n.groupParentId==="string";}
+function rmDeadline(n){
+  const dates=rmTasks(n).filter(t=>t.status===S.WAIT&&rmDay(t.waitUntil)!==null).map(t=>t.waitUntil);
+  return dates.length?dates.sort().at(-1):null;
+}
+function rmStatus(n){
+  const tasks=rmTasks(n), states=tasks.map(t=>t.status);
+  if(states.every(s=>s===S.DONE))return S.DONE;
+  if(states.includes(S.BLOCKED))return S.BLOCKED;
+  if(states.includes(S.WIP))return S.WIP;
+  if(states.includes(S.WAIT))return S.WAIT;
+  return states.includes(S.DONE)?S.WIP:S.TODO;
+}
+function rmHasCycle(edges){
+  const map=new Map(), visiting=new Set(), visited=new Set();
+  for(const e of edges){if(!map.has(e.from))map.set(e.from,[]);map.get(e.from).push(e.to);}
+  function visit(id){if(visiting.has(id))return true;if(visited.has(id))return false;visiting.add(id);for(const next of map.get(id)||[])if(visit(next))return true;visiting.delete(id);visited.add(id);return false;}
+  return [...map.keys()].some(visit);
+}
+function rmGroup(r,ids,title){
+  const nodes=r.nodes.filter(n=>ids.has(n.id));if(nodes.length<2)return null;
+  const group={id:"gate-"+uid(),title:title||"New gate",taskIds:nodes.flatMap(n=>n.taskIds),day:Math.max(...nodes.map(n=>n.day)),y:Math.min(...nodes.map(n=>n.y))};
+  const edges=r.edges.map(e=>({...e,from:ids.has(e.from)?group.id:e.from,to:ids.has(e.to)?group.id:e.to})).filter(e=>e.from!==e.to);
+  if(rmHasCycle(edges))return null;
+  return {...r,nodes:[...r.nodes.filter(n=>!ids.has(n.id)),group],edges};
+}
+function rmUngroup(r,id){
+  const n=r.nodes.find(n=>n.id===id);if(!n||!rmIsGroup(n))return r;
+  const members=new Set(n.taskIds),branches=new Map();
+  for(const taskId of n.taskIds){
+    let root=taskId,parent=find(taskId)?.parent;
+    while(parent){if(members.has(parent.id))root=parent.id;parent=find(parent.id)?.parent;}
+    if(!branches.has(root))branches.set(root,[]);branches.get(root).push(taskId);
+  }
+  const nodes=[],entries=[],exits=[],internal=[];
+  for(const [taskId,ids]of branches){
+    const y=n.y+entries.length*210,entry={id:"node-"+uid(),taskIds:[taskId],day:n.day,y};
+    nodes.push(entry);entries.push(entry);
+    const deeper=ids.filter(x=>x!==taskId);
+    if(deeper.length){
+      const gate={id:"gate-"+uid(),groupParentId:taskId,title:find(taskId)?.node.title||"Checklist",taskIds:deeper,day:n.day+10,y};
+      nodes.push(gate);exits.push(gate);internal.push({id:uid(),from:entry.id,to:gate.id,fromPort:"right",toPort:"left"});
+    }else exits.push(entry);
+  }
+  const edges=r.edges.flatMap(e=>e.from===id?exits.map(x=>({...e,id:uid(),from:x.id})):e.to===id?entries.map(x=>({...e,id:uid(),to:x.id})):[e]);
+  return {...r,nodes:[...r.nodes.filter(x=>x.id!==id),...nodes],edges:[...edges,...internal]};
+}
+// Keep unfinished milestones and their upstream context; prune completed suffixes.
+function rmPendingNodes(r){
+  const incoming=new Map(),keep=new Set(),queue=[];
+  for(const e of r.edges){if(!incoming.has(e.to))incoming.set(e.to,[]);incoming.get(e.to).push(e.from);}
+  for(const n of r.nodes)if(rmStatus(n)!==S.DONE){keep.add(n.id);queue.push(n.id);}
+  for(let i=0;i<queue.length;i++)for(const id of incoming.get(queue[i])||[])if(!keep.has(id)){keep.add(id);queue.push(id);}
+  return r.nodes.filter(n=>keep.has(n.id));
+}
+
+/* ---------- roadmap interface ---------- */
+const rmViewport=document.getElementById("rmViewport"),rmCanvas=document.getElementById("rmCanvas"),rmSurface=document.getElementById("rmSurface"),rmRuler=document.getElementById("rmRuler");
+let rmSelected=new Set(),rmSelectedEdge=null,rmZoom=.8,rmData=null,rmMinDay=0,rmGesture=null,rmLinkFrom=null,rmBoxes=new Map(),rmPending=false;
+const rmSVGNS="http://www.w3.org/2000/svg";
+function rmElement(tag,className,text){const e=document.createElement(tag);if(className)e.className=className;if(text!==undefined)e.textContent=text;return e;}
+function rmSvg(tag,attrs){const e=document.createElementNS(rmSVGNS,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);return e;}
+function rmCommit(r,label){model.roadmap=rmReconcile(r);markDirty("edit",label);render();}
+function rmChangeTask(t,status){
+  setStatus(t,status);markDirty("edit","Roadmap: change status");escalate();render();
+}
+function rmStateButtons(t){
+  const moves=rmElement("div","moves rm-moves");
+  for(const lane of LANES.filter(l=>l.k!==t.status)){
+    const b=rmElement("button","",lane.glyph);b.title="Move to "+lane.label;b.setAttribute("aria-label",(t.title||"Untitled")+": "+lane.label);
+    b.style.setProperty("--action-color",lane.c);b.onclick=()=>rmChangeTask(t,lane.k);moves.appendChild(b);
+  }
+  return moves;
+}
+function rmBreadcrumb(n){
+  if(n.groupParentId){const parent=find(n.groupParentId);return parent?crumbFor(parent.node.id)||"ROOT TASK":"CHECKLIST";}
+  const paths=rmTasks(n).map(t=>crumbFor(t.id).split(" / "));let common=paths[0]||[];
+  for(const path of paths)common=common.filter((s,i)=>common.slice(0,i+1).every((x,j)=>x===path[j]));
+  return common.join(" / ")||(rmIsGroup(n)?"CHECKLIST GATE":"ROOT TASK");
+}
+function rmDateInput(t){
+  const e=rmElement("input");e.type="date";e.value=t.waitUntil||"";e.setAttribute("aria-label","Waiting until: "+(t.title||"Untitled"));
+  e.onchange=()=>{if(e.value&&rmDay(e.value)===null)return;t.waitUntil=e.value||undefined;delete t.escalatedFrom;markDirty("edit","Roadmap: set wait date");escalate();render();};return e;
+}
+function rmCard(n){
+  const tasks=rmTasks(n),group=rmIsGroup(n),status=rmStatus(n),lane=LANES.find(l=>l.k===status);
+  const card=rmElement("article","rm-node card"+(rmSelected.has(n.id)?" selected":""));card.dataset.node=n.id;card.style.setProperty("--node-color",lane.c);card.style.setProperty("--lanec",lane.c);
+  const head=rmElement("header"),grip=rmElement("button","rm-grip","⠿");grip.title="Drag to move. Waiting dates pin the horizontal position.";grip.setAttribute("aria-label","Move milestone (drag or arrow keys)");
+  grip.onpointerdown=e=>rmStartMove(e,n,card);
+  grip.onkeydown=e=>{
+    const dx={ArrowLeft:-1,ArrowRight:1}[e.key]||0,dy={ArrowUp:-24,ArrowDown:24}[e.key]||0;if(!dx&&!dy)return;e.preventDefault();
+    const r=rmReconcile(model.roadmap),x=r.nodes.find(x=>x.id===n.id);if(!rmDeadline(n))x.day+=dx;x.y=Math.max(24,x.y+dy);rmCommit(r,"Roadmap: move milestone");
+    [...rmCanvas.querySelectorAll(".rm-node")].find(x=>x.dataset.node===n.id)?.querySelector(".rm-grip").focus();
+  };
+  const selectedBox=rmElement("input");selectedBox.type="checkbox";selectedBox.checked=rmSelected.has(n.id);selectedBox.setAttribute("aria-label","Select milestone: "+(n.title||tasks[0].title||"Untitled"));
+  selectedBox.onchange=()=>{selectedBox.checked?rmSelected.add(n.id):rmSelected.delete(n.id);card.classList.toggle("selected",selectedBox.checked);rmPaintControls();};
+  const title=rmElement("div","ttl rm-title",group?n.title||"Gate":tasks[0].title||"Untitled task");title.tabIndex=0;title.title="Double-click or press Enter to rename";
+  const rename=()=>{const value=prompt(group?"Gate name:":"Task title:",group?n.title||"Gate":tasks[0].title);if(value===null)return;if(group){model.roadmap=rmReconcile(model.roadmap);model.roadmap.nodes.find(x=>x.id===n.id).title=value;}else tasks[0].title=value;markDirty("edit",group?"Rename gate":"Rename task");render();};
+  title.ondblclick=rename;title.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();rename();}};
+  const crumb=rmElement("div","crumb",rmBreadcrumb(n));crumb.title=crumb.textContent;
+  head.append(crumb,selectedBox,grip);card.appendChild(head);
+  const body=rmElement("div","rm-node-body");
+  body.appendChild(title);
+  if(group){
+    body.appendChild(rmElement("div","rm-meta",tasks.filter(t=>t.status===S.DONE).length+" / "+tasks.length+" complete"));
+    const progress=rmElement("div","rm-progress"),fill=rmElement("i");fill.style.width=tasks.filter(t=>t.status===S.DONE).length/tasks.length*100+"%";progress.appendChild(fill);body.appendChild(progress);
+    const checklist=rmElement("div","rm-checklist");
+    for(const t of tasks.filter(t=>!rmPending||t.status!==S.DONE)){
+      const row=rmElement("div","rm-check"),check=rmElement("input");check.type="checkbox";check.checked=t.status===S.DONE;check.setAttribute("aria-label","Complete: "+(t.title||"Untitled"));check.onchange=()=>rmChangeTask(t,check.checked?S.DONE:S.TODO);
+      const label=rmElement("span","rm-check-label"+(t.status===S.DONE?" done":""),t.title||"Untitled task");label.style.color=LANES.find(l=>l.k===t.status).c;
+      row.append(check,label);
+      const controls=rmElement("div","rm-check-controls");controls.appendChild(rmStateButtons(t));if(t.status===S.WAIT)controls.appendChild(rmDateInput(t));row.appendChild(controls);checklist.appendChild(row);
+    }body.appendChild(checklist);
+    const hidden=tasks.filter(t=>t.status===S.DONE).length;if(rmPending&&hidden)body.appendChild(rmElement("div","rm-meta",hidden+" completed item"+(hidden===1?"":"s")+" hidden"));
+  }else{
+    if(tasks[0].note)body.appendChild(rmElement("div","rm-preview",tasks[0].note));
+    if(tasks[0].children.length)body.appendChild(rmElement("div","rm-meta",tasks[0].children.length+" subtasks · "+Math.round(progress(tasks[0])*100)+"% complete"));
+    if(tasks[0].status===S.WAIT){const d=rmElement("label","rm-date","Until ");d.appendChild(rmDateInput(tasks[0]));body.appendChild(d);}
+    if(tasks[0].status===S.BLOCKED&&tasks[0].escalatedFrom)body.appendChild(rmElement("div","rm-date","Overdue · "+tasks[0].escalatedFrom));
+    const foot=rmElement("div","foot");foot.append(rmElement("span","who",tasks[0].owner?"@"+tasks[0].owner:""),rmStateButtons(tasks[0]));body.appendChild(foot);
+  }
+  const date=rmDeadline(n);if(date&&group)body.appendChild(rmElement("div","rm-date","⌖ "+date+" · latest wait"));
+  card.appendChild(body);
+  for(const [side,symbol]of Object.entries({left:"←",right:"→"})){
+    const port=rmElement("button","rm-port",symbol);port.dataset.side=side;port.title="Drag to another milestone, or click two ports to connect";port.setAttribute("aria-label","Connect milestone: "+side);
+    port.onpointerdown=e=>rmStartLink(e,n.id,side);
+    port.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();if(rmLinkFrom&&rmLinkFrom.id!==n.id)rmConnect(rmLinkFrom.id,n.id,rmLinkFrom.side,side);else{rmLinkFrom={id:n.id,side};rmCanvas.classList.add("rm-linking");}}};
+    card.appendChild(port);
+  }
+  card.onclick=e=>{if(rmLinkFrom&&!e.target.closest("button,input,select"))rmConnect(rmLinkFrom.id,n.id,rmLinkFrom.side,"left");};
+  return card;
+}
+function rmPaintControls(){
+  document.getElementById("rmGroup").disabled=rmSelected.size<2;
+  document.getElementById("rmUngroup").disabled=![...rmSelected].some(id=>{const n=rmData?.nodes.find(n=>n.id===id);return n&&rmIsGroup(n);});
+  document.getElementById("rmRemoveLink").disabled=!rmSelectedEdge;
+  const count=rmData?.nodes.length||0,links=rmData?.edges.filter(e=>rmBoxes.has(e.from)&&rmBoxes.has(e.to)).length||0;
+  document.getElementById("rmCount").textContent=(rmPending?rmBoxes.size+" / "+count:count)+" milestones · "+links+" links"+(rmSelected.size?" · "+rmSelected.size+" selected":"");
+  document.getElementById("rmPending").setAttribute("aria-pressed",String(rmPending));
+  document.getElementById("rmZoomLabel").textContent=Math.round(rmZoom*100)+"%";
+}
+function renderRoadmap(){
+  rmData=rmReconcile(model.roadmap);const visible=rmPending?rmPendingNodes(rmData):rmData.nodes,visibleIds=new Set(visible.map(n=>n.id));
+  rmSelected=new Set([...rmSelected].filter(id=>visibleIds.has(id)));
+  if(!rmData.edges.some(e=>e.id===rmSelectedEdge&&visibleIds.has(e.from)&&visibleIds.has(e.to)))rmSelectedEdge=null;
+  rmCanvas.replaceChildren();rmBoxes.clear();rmLinkFrom=null;rmCanvas.classList.remove("rm-linking");
+  const origin=rmDay(rmData.origin),days=visible.map(n=>rmDeadline(n)?rmDay(rmDeadline(n))-origin:n.day),today=rmDay(rmToday())-origin;
+  rmMinDay=Math.floor(Math.min(0,today,...days)/7)*7-7;
+  const width=Math.max(1500,(Math.max(today+21,...days.map(d=>d+10))-rmMinDay)*RM_DAY+120);
+  let height=620;
+  const grid=rmElement("div","rm-grid");rmCanvas.appendChild(grid);
+  const placed=visible.map((n,i)=>({n,day:days[i]})).sort((a,b)=>a.n.y-b.n.y);
+  for(const {n,day}of placed){
+    const card=rmCard(n),x=60+(day-rmMinDay)*RM_DAY;let y=n.y;
+    card.style.left=x+"px";card.style.top=y+"px";rmCanvas.appendChild(card);
+    const h=card.offsetHeight;let collision;
+    while((collision=[...rmBoxes.values()].find(b=>x<b.x+b.w+28&&x+RM_WIDTH+28>b.x&&y<b.y+b.h+28&&y+h+28>b.y)))y=collision.y+collision.h+28;
+    card.style.top=y+"px";rmBoxes.set(n.id,{x,y,w:RM_WIDTH,h,element:card});height=Math.max(height,y+h+120);
+  }
+  if(!visible.length)rmCanvas.appendChild(rmElement("div","rm-empty",rmData.nodes.length?"No pending work. Turn off PENDING to show completed milestones.":"No milestones yet. Add a task to start your roadmap."));
+  rmCanvas.style.width=width+"px";rmCanvas.style.height=height+"px";rmCanvas.style.transform=`scale(${rmZoom})`;
+  rmSurface.style.width=width*rmZoom+"px";rmSurface.style.height=height*rmZoom+"px";
+  rmRuler.style.width=width*rmZoom+"px";rmRuler.replaceChildren();
+  const end=rmMinDay+width/RM_DAY,step=Math.max(1,Math.ceil((end-rmMinDay)/1500)),labelStep=rmZoom<.5?14:7;
+  for(let day=rmMinDay;day<=end;day+=step){
+    const x=60+(day-rmMinDay)*RM_DAY,major=day%7===0;
+    const line=rmElement("div","rm-line"+(major?" major":""));line.style.left=x+"px";grid.appendChild(line);
+    if(day%labelStep===0&&Math.abs(day-today)>2/rmZoom){const label=rmElement("span","",rmDate(origin+day));label.style.left=x*rmZoom+6+"px";rmRuler.appendChild(label);}
+  }
+  const now=rmElement("div","rm-line now"),nowX=60+(today-rmMinDay)*RM_DAY;now.style.left=nowX+"px";grid.appendChild(now);
+  const nowLabel=rmElement("span","rm-now","TODAY · "+rmToday());nowLabel.style.left=nowX*rmZoom+6+"px";rmRuler.appendChild(nowLabel);
+  const svg=rmSvg("svg",{class:"rm-links",width,height,"aria-label":"Milestone connections"});rmCanvas.insertBefore(svg,rmCanvas.children[1]||null);
+  rmDrawEdges();rmPaintControls();stats();
+  document.getElementById("stamp").textContent=new Date(model.updated).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
+}
+function rmAnchor(id,side){const b=rmBoxes.get(id);if(!b)return {x:0,y:0};return {x:b.x+(side==="left"?0:side==="right"?b.w:b.w/2),y:b.y+(side==="top"?0:side==="bottom"?b.h:b.h/2)};}
+function rmCurve(a,b,from="right",to="left"){
+  const delta=Math.max(60,Math.min(200,Math.abs(b.x-a.x)/2+Math.abs(b.y-a.y)/5));
+  const v=s=>({left:[-delta,0],right:[delta,0],top:[0,-delta],bottom:[0,delta]}[s]);const u=v(from),w=v(to);
+  return `M ${a.x} ${a.y} C ${a.x+u[0]} ${a.y+u[1]}, ${b.x+w[0]} ${b.y+w[1]}, ${b.x} ${b.y}`;
+}
+function rmDrawEdges(){
+  const svg=rmCanvas.querySelector(".rm-links");if(!svg)return;svg.replaceChildren();
+  const defs=rmSvg("defs",{}),marker=rmSvg("marker",{id:"rmArrow",viewBox:"0 0 10 10",refX:9,refY:5,markerWidth:6,markerHeight:6,orient:"auto-start-reverse"});
+  marker.appendChild(rmSvg("path",{d:"M 0 0 L 10 5 L 0 10 z",fill:"var(--ink-soft)"}));defs.appendChild(marker);svg.appendChild(defs);
+  for(const e of rmData.edges){
+    if(!rmBoxes.has(e.from)||!rmBoxes.has(e.to))continue;
+    const d=rmCurve(rmAnchor(e.from,e.fromPort),rmAnchor(e.to,e.toPort),e.fromPort,e.toPort);
+    svg.appendChild(rmSvg("path",{d,class:"rm-wire"+(rmSelectedEdge===e.id?" active":""),"marker-end":"url(#rmArrow)"}));
+    const hit=rmSvg("path",{d,class:"rm-hit",tabindex:0,role:"button","aria-label":"Select connection to remove"});
+    hit.onclick=()=>{rmSelectedEdge=e.id;rmDrawEdges();rmPaintControls();};hit.onkeydown=ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();hit.onclick();}};
+    svg.appendChild(hit);
+  }
+}
+function rmPoint(e){const rect=rmCanvas.getBoundingClientRect();return {x:(e.clientX-rect.left)/rmZoom,y:(e.clientY-rect.top)/rmZoom};}
+function rmStartMove(e,n,card){
+  if(e.button!==0)return;e.preventDefault();rmLinkFrom=null;rmCanvas.classList.remove("rm-linking");
+  const p=rmPoint(e),b=rmBoxes.get(n.id);rmGesture={kind:"move",id:n.id,dx:p.x-b.x,dy:p.y-b.y,startX:b.x,startY:b.y,locked:!!rmDeadline(n),moved:false,pointer:e.pointerId};
+  e.currentTarget.setPointerCapture(e.pointerId);
+}
+function rmStartLink(e,id,side){
+  if(e.button!==0)return;e.preventDefault();e.stopPropagation();
+  if(rmLinkFrom&&rmLinkFrom.id!==id){rmConnect(rmLinkFrom.id,id,rmLinkFrom.side,side);return;}
+  rmGesture={kind:"link",id,side,pointer:e.pointerId};rmCanvas.classList.add("rm-linking");e.currentTarget.setPointerCapture(e.pointerId);
+}
+function rmConnect(from,to,fromPort,toPort){
+  rmLinkFrom=null;rmGesture=null;rmCanvas.classList.remove("rm-linking");rmCanvas.querySelector(".ghost")?.remove();
+  if(from===to)return;
+  const r=rmReconcile(model.roadmap);if(!r.nodes.some(n=>n.id===from)||!r.nodes.some(n=>n.id===to))return;
+  if(r.edges.some(e=>e.from===from&&e.to===to))return flash("These milestones are already connected");
+  const edge={id:uid(),from,to,fromPort,toPort};
+  if(rmHasCycle([...r.edges,edge]))return flash("This connection would create a circular sequence");
+  r.edges.push(edge);rmCommit(r,"Roadmap: connect milestones");
+}
+document.addEventListener("pointermove",e=>{
+  if(!rmGesture||rmGesture.pointer!==e.pointerId)return;
+  const g=rmGesture;
+  if(g.kind==="pan"){rmViewport.scrollLeft=g.left+g.x-e.clientX;rmViewport.scrollTop=g.top+g.y-e.clientY;return;}
+  const rect=rmViewport.getBoundingClientRect();
+  if(e.clientX>rect.right-35)rmViewport.scrollLeft+=18;else if(e.clientX<rect.left+35)rmViewport.scrollLeft-=18;
+  if(e.clientY>rect.bottom-35)rmViewport.scrollTop+=18;else if(e.clientY<rect.top+55)rmViewport.scrollTop-=18;
+  const p=rmPoint(e);
+  if(g.kind==="move"){
+    const b=rmBoxes.get(g.id);b.x=g.locked?g.startX:Math.max(20,p.x-g.dx);b.y=Math.max(24,p.y-g.dy);g.moved=Math.abs(b.x-g.startX)+Math.abs(b.y-g.startY)>3;
+    b.element.style.left=b.x+"px";b.element.style.top=b.y+"px";rmDrawEdges();
+  }else{
+    const svg=rmCanvas.querySelector(".rm-links");svg.querySelector(".ghost")?.remove();
+    svg.appendChild(rmSvg("path",{class:"rm-wire ghost",d:rmCurve(rmAnchor(g.id,g.side),p,g.side,"left")}));
+  }
+});
+document.addEventListener("pointerup",e=>{
+  if(!rmGesture||rmGesture.pointer!==e.pointerId)return;
+  const g=rmGesture;rmGesture=null;
+  if(g.kind==="pan"){rmViewport.style.cursor="";return;}
+  if(g.kind==="move"){
+    if(g.moved){const b=rmBoxes.get(g.id),r=rmReconcile(model.roadmap),n=r.nodes.find(n=>n.id===g.id);if(!g.locked)n.day=Math.round((b.x-60)/RM_DAY+rmMinDay);n.y=Math.round(b.y);rmCommit(r,"Roadmap: move milestone");}
+    else renderRoadmap();
+  }else{
+    const target=document.elementFromPoint(e.clientX,e.clientY),node=target?.closest(".rm-node");
+    rmCanvas.querySelector(".ghost")?.remove();
+    if(node&&node.dataset.node!==g.id)rmConnect(g.id,node.dataset.node,g.side,target.closest(".rm-port")?.dataset.side||"left");
+    else if(node?.dataset.node===g.id){rmLinkFrom={id:g.id,side:g.side};}
+    else{rmLinkFrom=null;rmCanvas.classList.remove("rm-linking");}
+  }
+});
+rmViewport.addEventListener("pointerdown",e=>{
+  if(e.button!==0||e.target.closest(".rm-node,.rm-hit,button,input,select"))return;
+  rmGesture={kind:"pan",pointer:e.pointerId,x:e.clientX,y:e.clientY,left:rmViewport.scrollLeft,top:rmViewport.scrollTop};rmViewport.style.cursor="grabbing";rmViewport.setPointerCapture(e.pointerId);e.preventDefault();
+});
+document.addEventListener("pointercancel",()=>{if(rmGesture){rmGesture=null;rmViewport.style.cursor="";renderRoadmap();}});
+document.addEventListener("keydown",e=>{if(view==="roadmap"&&e.key==="Escape"){rmGesture=null;rmLinkFrom=null;rmViewport.style.cursor="";renderRoadmap();}});
+document.getElementById("rmGroup").onclick=()=>{
+  const title=prompt("Name this checklist gate:","New gate");if(title===null)return;
+  const r=rmGroup(rmReconcile(model.roadmap),rmSelected,title.trim()||"New gate");
+  if(!r)return flash("Grouping would create a circular sequence. Remove conflicting links first.");
+  rmSelected=new Set([r.nodes.at(-1).id]);rmCommit(r,"Roadmap: group checklist");
+};
+document.getElementById("rmUngroup").onclick=()=>{let r=rmReconcile(model.roadmap);for(const id of rmSelected)r=rmUngroup(r,id);rmSelected.clear();rmCommit(r,"Roadmap: ungroup checklist");};
+document.getElementById("rmPending").onclick=()=>{rmPending=!rmPending;rmGesture=null;rmLinkFrom=null;renderRoadmap();};
+document.getElementById("rmRemoveLink").onclick=()=>{const r=rmReconcile(model.roadmap);r.edges=r.edges.filter(e=>e.id!==rmSelectedEdge);rmSelectedEdge=null;rmCommit(r,"Roadmap: remove connection");};
+document.getElementById("rmReset").onclick=()=>{if(confirm("Reset roadmap positions, groups and links from the task tree? Tasks stay unchanged. You can undo this.")){rmSelected.clear();rmCommit(rmDefault(),"Roadmap: reset from tree");}};
+document.getElementById("rmAdd").onclick=()=>{const t=newTask("New task");model.tasks.push(t);model.roadmap=rmReconcile(model.roadmap);const n=model.roadmap.nodes.find(n=>n.taskIds.includes(t.id));n.day=Math.round((rmViewport.scrollLeft+rmViewport.clientWidth/2)/rmZoom/RM_DAY+rmMinDay);n.y=Math.max(24,(rmViewport.scrollTop+80)/rmZoom);rmSelected=new Set([n.id]);markDirty("edit","Roadmap: add task");render();};
+function rmSetZoom(z){const x=(rmViewport.scrollLeft+rmViewport.clientWidth/2)/rmZoom,y=(rmViewport.scrollTop+rmViewport.clientHeight/2)/rmZoom;rmZoom=Math.max(.25,Math.min(1.5,z));renderRoadmap();rmViewport.scrollLeft=x*rmZoom-rmViewport.clientWidth/2;rmViewport.scrollTop=y*rmZoom-rmViewport.clientHeight/2;}
+document.getElementById("rmZoomOut").onclick=()=>rmSetZoom(rmZoom-.1);
+document.getElementById("rmZoomIn").onclick=()=>rmSetZoom(rmZoom+.1);
+document.getElementById("rmToday").onclick=()=>{rmViewport.scrollLeft=Math.max(0,(60+(rmDay(rmToday())-rmDay(rmData.origin)-rmMinDay)*RM_DAY)*rmZoom-rmViewport.clientWidth/3);};
+
+/* Map-only full-window view. It works for local files without browser permissions. */
+function rmSetFullscreen(on){
+  document.documentElement.classList.toggle("rm-fullscreen",on);
+  const b=document.getElementById("rmFullscreen");b.textContent=on?"↙ Exit full screen":"⛶ Full screen";b.setAttribute("aria-pressed",String(on));
+  if(on)b.focus();
+}
+document.getElementById("rmFullscreen").onclick=()=>rmSetFullscreen(!document.documentElement.classList.contains("rm-fullscreen"));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.documentElement.classList.contains("rm-fullscreen"))rmSetFullscreen(false);});
+
+/* ---------- wiring ---------- */
+addRoot.onclick=()=>{const t=newTask();model.tasks.push(t);selected=t.id;touch(t.id,"Add task");};
+expandAll.onclick=()=>{walk(model.tasks,n=>n.collapsed=false);render();};
+collapseAll.onclick=()=>{walk(model.tasks,n=>{if(n.children.length)n.collapsed=true;});render();};
+saveBtn.onclick=save;
+saveAsBtn.onclick=saveAs;
+mdBtn.onclick=exportMd;
+loadBtn.onclick=open_;
+fileInput.onchange=e=>{if(e.target.files[0])load(e.target.files[0]);e.target.value="";};
+planName.oninput=()=>{model.name=planName.value;markDirty("text","Rename plan");};
+search.oninput=e=>{query=e.target.value;render();};
+document.getElementById("filters").onclick=e=>{
+  const b=e.target.closest("button");if(!b)return;
+  filter=b.dataset.f;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed",x===b));
+  render();
+};
+/* ---------- theme ---------- */
+const root=document.documentElement;
+function setTheme(t){
+  root.dataset.theme=t;
+  themeLbl.textContent=t==="dark"?"Light":"Dark";
+  themeBtn.setAttribute("aria-pressed",t==="dark");
+  themeBtn.title=t==="dark"?"Switch to light mode":"Switch to dark mode";
+  try{localStorage.setItem("wbs-theme",t);}catch(e){}
+}
+let stored=null;try{stored=localStorage.getItem("wbs-theme");}catch(e){}
+setTheme(stored||(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+themeBtn.onclick=()=>setTheme(root.dataset.theme==="dark"?"light":"dark");
+
+/* ---------- layout width ---------- */
+function setWidth(w){
+  root.dataset.width=w;
+  widthLbl.textContent=w==="full"?"Contained":"Full width";
+  widthBtn.setAttribute("aria-pressed",w==="full");
+  widthBtn.title=w==="full"?"Constrain layout width":"Use the full window width";
+  try{localStorage.setItem("wbs-width",w);}catch(e){}
+}
+let storedW=null;try{storedW=localStorage.getItem("wbs-width");}catch(e){}
+setWidth(storedW||"contained");
+widthBtn.onclick=()=>setWidth(root.dataset.width==="full"?"contained":"full");
+
+window.addEventListener("beforeunload",e=>{if(dirty){e.preventDefault();e.returnValue="";}});
+
+/* ---------- view switch ---------- */
+function setView(v){
+  view=v;
+  viewTree.hidden=v!=="tree";viewBoard.hidden=v!=="board";document.getElementById("viewRoadmap").hidden=v!=="roadmap";
+  document.getElementById("tabRoadmap").setAttribute("aria-selected",v==="roadmap");
+  document.getElementById("search").hidden=v==="roadmap";
+  document.querySelector("footer").hidden=v!=="tree";
+  rmGesture=null;rmLinkFrom=null;
+  tabTree.setAttribute("aria-selected",v==="tree");
+  tabBoard.setAttribute("aria-selected",v==="board");
+  document.getElementById("filters").style.display=v!=="tree"?"none":"";
+  if(v!=="roadmap")rmSetFullscreen(false);
+  dock.hidden=v!=="tree";
+  document.documentElement.dataset.dock=(v!=="tree")?"closed":(dock.dataset.open==="true"?"open":"closed");
+  expandAll.style.display=collapseAll.style.display=addRoot.style.display=v!=="tree"?"none":"";
+  render();
+}
+/* column visibility */
+const COLS=["owner","status","rollup","notes"];
+const COL_LABELS={owner:["Owner","Owr"],status:["Status","St"],rollup:["Progress","Prg"],notes:["Notes","Nt"]};
+function setCol(c,on){
+  document.documentElement.dataset["col"+c[0].toUpperCase()+c.slice(1)]=on?"on":"off";
+  const b=document.getElementById("col-"+c);
+  b.setAttribute("aria-expanded",String(on));b.title=(on?"Collapse ":"Expand ")+COL_LABELS[c][0]+" column";
+  b.setAttribute("aria-label",b.title);
+  document.getElementById("col-arrow-"+c).textContent=on?"▾":"▸";
+  document.getElementById("col-label-"+c).textContent=COL_LABELS[c][on?0:1];
+  try{localStorage.setItem("wbs-col-"+c,on?"on":"off");}catch(e){}
+}
+COLS.forEach(c=>{
+  let v="on";try{v=localStorage.getItem("wbs-col-"+c)||"on";}catch(e){}setCol(c,v==="on");
+  document.getElementById("col-"+c).onclick=()=>setCol(c,document.getElementById("col-"+c).getAttribute("aria-expanded")!=="true");
+});
+
+/* notes dock */
+function setDock(open){
+  dock.dataset.open=open;
+  document.documentElement.dataset.dock=open?"open":"closed";
+  dockToggle.textContent=open?"▾":"▴";
+  dockToggle.setAttribute("aria-expanded",open);
+  dockToggle.title=open?"Collapse the notes panel":"Expand the notes panel";
+  try{localStorage.setItem("wbs-dock",open?"open":"closed");}catch(e){}
+}
+dockToggle.onclick=()=>setDock(dock.dataset.open!=="true");
+let dv="open";try{dv=localStorage.getItem("wbs-dock")||"open";}catch(e){}
+setDock(dv==="open");
+
+undoBtn.onclick=undo;
+redoBtn.onclick=redo;
+
+tabTree.onclick=()=>setView("tree");
+tabBoard.onclick=()=>setView("board");
+document.getElementById("tabRoadmap").onclick=()=>setView("roadmap");
+
+planName.value=model.name;
+resetHistory();
+escalate();
+paintFile();
+render();
+
+/* Re-check wait dates hourly and whenever the tab regains focus, so a plan left
+   open overnight escalates without needing a reload. */
+setInterval(()=>{if(escalate())render();},3600000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&escalate())render();});
+</script>
+</body>
+</html>

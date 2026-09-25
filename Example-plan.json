@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "name": "Untitled plan",
+  "updated": "2026-09-25T17:18:10.313Z",
+  "tasks": [
+    {
+      "id": "6uf0uvbz",
+      "title": "Define mission objectives",
+      "status": "todo",
+      "owner": "",
+      "note": "",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "1e5mu195",
+          "title": "Tarea 1",
+          "status": "wip",
+          "owner": "",
+          "note": "",
+          "collapsed": false,
+          "children": []
+        },
+        {
+          "id": "4r1obniw",
+          "title": "Tarea2",
+          "status": "wip",
+          "owner": "",
+          "note": "",
+          "collapsed": false,
+          "children": []
+        },
+        {
+          "id": "qwns2y84",
+          "title": "Tarea3",
+          "status": "wait",
+          "owner": "",
+          "note": "",
+          "collapsed": false,
+          "children": [],
+          "waitUntil": "2026-10-02"
+        },
+        {
+          "id": "48pf7gup",
+          "title": "",
+          "status": "done",
+          "owner": "",
+          "note": "",
+          "collapsed": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "8hgpzqpe",
+      "title": "Structures & thermalization",
+      "status": "todo",
+      "owner": "",
+      "note": "",
+      "collapsed": false,
+      "children": [
+        {
+          "id": "uus09y5r",
+          "title": "Primary Tank trade study",
+          "status": "wip",
+          "owner": "",
+          "note": "",
+          "collapsed": false,
+          "children": []
+        },
+        {
+          "id": "azq7wmn5",
+          "title": "Thermal balance test plan",
+          "status": "blocked",
+          "owner": "",
+          "note": "Waiting on chamber slot.",
+          "collapsed": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "v0zscao4",
+      "title": "Avionics",
+      "status": "todo",
+      "owner": "",
+      "note": "",
+      "collapsed": false,
+      "children": []
+    }
+  ]
+}
